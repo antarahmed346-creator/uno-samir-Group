@@ -1,7 +1,6 @@
 import QueryProvider from '@/components/providers/QueryProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { cookies } from 'next/headers'
-import './globals.css'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
