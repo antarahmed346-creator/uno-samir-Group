@@ -6,7 +6,8 @@ import { createBrowserClient } from '@/lib/supabase/client'
 
 interface UseRealtimeMenuOptions {
   brandId?: string
-  enabled?: boolean}
+  enabled?: boolean
+}
 
 export function useRealtimeMenu({ brandId, enabled = true }: UseRealtimeMenuOptions) {
   const queryClient = useQueryClient()
@@ -16,7 +17,6 @@ export function useRealtimeMenu({ brandId, enabled = true }: UseRealtimeMenuOpti
 
     const supabase = createBrowserClient()
     const channels: ReturnType<typeof supabase.channel>[] = []
-
 
     // Products channel
     const productsChannel = supabase
@@ -29,12 +29,12 @@ export function useRealtimeMenu({ brandId, enabled = true }: UseRealtimeMenuOpti
           table: 'products',
           filter: brandId ? `brand_id=eq.${brandId}` : undefined,
         },
-        (payload) => {
+        () => {
           queryClient.invalidateQueries({ queryKey: ['products'] })
           queryClient.invalidateQueries({ queryKey: ['product'] })
         }
       )
-      .subscribe((status) => {
+      .subscribe(() => {
       })
     channels.push(productsChannel)
 
@@ -49,11 +49,11 @@ export function useRealtimeMenu({ brandId, enabled = true }: UseRealtimeMenuOpti
           table: 'offers',
           filter: brandId ? `brand_id=eq.${brandId}` : undefined,
         },
-        (payload) => {
+        () => {
           queryClient.invalidateQueries({ queryKey: ['offers'] })
         }
       )
-      .subscribe((status) => {
+      .subscribe(() => {
       })
     channels.push(offersChannel)
 
@@ -68,11 +68,11 @@ export function useRealtimeMenu({ brandId, enabled = true }: UseRealtimeMenuOpti
             schema: 'public',
             table: 'homepage_sections',
           },
-          (payload) => {
+          () => {
             queryClient.invalidateQueries({ queryKey: ['homepage'] })
           }
         )
-        .subscribe((status) => {
+        .subscribe(() => {
         })
       channels.push(homepageChannel)
     }
