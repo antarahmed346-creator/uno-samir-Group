@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Home",
+    "pizza": "🍕 Pizza",
+    "feteer": "🥐 Feteer",
+    "crepe": "🥞 Crêpe",
+    "trackOrder": "Track Order",
+    "cart": "Cart",
+    "search": "Search for food..."
+  },
+  "home": {
+    "title": "UNO & SAMIR GROUP | Marsa Matrouh Restaurants",
+    "heroTitle": "UNO & SAMIR GROUP",
+    "heroSubtitle": "Marsa Matrouh Restaurant Group — Best Italian Pizza, Egyptian Feteer, and French Crêpes",
+    "orderNow": "Order Now",
+    "featured": "Featured Products",
+    "offers": "Special Offers",
+    "brands": "Choose Your Favorite Brand"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "What are you craving...",
+    "category": "Category",
+    "brand": "Brand",
+    "minPrice": "Min Price",
+    "maxPrice": "Max Price",
+    "filter": "Filter",
+    "clearFilters": "Clear Filters",
+    "tags": "Popular Tags",
+    "allCategories": "All Categories",
+    "allBrands": "All Brands",
+    "noResults": "No results found",
+    "tryAgain": "Try changing filters or search term",
+    "startSearch": "Type above or select a filter to find what you want"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "emptySub": "Start your order by adding some delicious dishes",
+    "browseMenu": "Browse Menu",
+    "total": "Total",
+    "checkout": "Checkout",
+    "continueShopping": "Continue Shopping",
+    "items": "items"
+  },
+  "footer": {
+    "brands": "Brands",
+    "quickLinks": "Quick Links",
+    "location": "Marsa Matrouh, Egypt",
+    "rights": "All rights reserved © 2026 UNO & SAMIR GROUP"
+  },
+  "language": {
+    "ar": "العربية",
+    "en": "English"
+  }
+}
