@@ -6,7 +6,7 @@ export const SITE_CONFIG = {
   nameAr: 'يونو وسمير جروب',
   description: 'مجموعة مطاعم مرسى مطروح — أشهى البيتزا الإيطالية، الفطير المصري، والكريب الفرنسي',
   descriptionEn: 'Marsa Matrouh Restaurant Group — Best Italian Pizza, Egyptian Feteer, and French Crêpes',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://uno-samir.com',
+  url: process.env.NEXT_PUBLIC_APP_URL || 'https://uno-samir.com',
   logo: '/logo.png',
   phone: '+20-XXX-XXX-XXXX',
   address: {

@@ -6,7 +6,7 @@ import { createBrowserClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Search, Eye, RefreshCw } from 'lucide-react'
+import { Loader2, Search, Eye, RefreshCw, CalendarClock } from 'lucide-react'
 import { toast } from 'sonner'
 
 // WHAT: Type-safe Order interface matching the API response shape
@@ -22,6 +22,7 @@ interface Order {
   status: string
   payment_method: string
   created_at: string
+  scheduled_delivery_time: string | null
   brand: { name_ar: string; name_en: string }
   items: { id: string; product_name_ar: string; quantity: number; total_price: number }[]
 }
@@ -182,7 +183,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border">
+      <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-gray-900 p-4 rounded-xl border">
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -214,19 +215,19 @@ export default function OrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <p>لا توجد طلبات</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50 dark:bg-gray-800 border-b">
                 <tr>
                   <th className="px-4 py-3 text-right font-semibold">رقم الطلب</th>
                   <th className="px-4 py-3 text-right font-semibold">البراند</th>
@@ -234,13 +235,14 @@ export default function OrdersPage() {
                   <th className="px-4 py-3 text-right font-semibold">التليفون</th>
                   <th className="px-4 py-3 text-right font-semibold">الإجمالي</th>
                   <th className="px-4 py-3 text-right font-semibold">الحالة</th>
+                  <th className="px-4 py-3 text-right font-semibold">الموعد</th>
                   <th className="px-4 py-3 text-right font-semibold">التاريخ</th>
                   <th className="px-4 py-3 text-right font-semibold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={order.id} className="hover:bg-gray-50 dark:bg-gray-800 transition-colors">
                     <td className="px-4 py-3 font-mono text-xs">#{order.order_number || order.id.slice(0, 8)}</td>
                     <td className="px-4 py-3">{order.brand?.name_ar}</td>
                     <td className="px-4 py-3 font-medium">{order.customer_name}</td>
@@ -251,7 +253,23 @@ export default function OrdersPage() {
                         {STATUS_LABELS[order.status] || order.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3">
+                      {order.scheduled_delivery_time ? (
+                        <Badge className="bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100 gap-1">
+                          <CalendarClock className="h-3 w-3" />
+                          {new Date(order.scheduled_delivery_time).toLocaleString('ar-EG', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">فوري</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {new Date(order.created_at).toLocaleDateString('ar-EG')}
                     </td>
                     <td className="px-4 py-3">

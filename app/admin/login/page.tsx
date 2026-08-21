@@ -54,7 +54,6 @@ export default function LoginPage() {
       // KILL: رجوع الشاشة الوسط أو window.location.href هيرجّع
       //       نفس المشكلة اللي كانت مضايقة — تأخير + إعادة تحميل بطيئة
       router.push('/admin/dashboard')
-      router.refresh()
 
     } catch (err: unknown) {
       console.error('[Login] Error:', err)
@@ -64,7 +63,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-red-50 flex items-center justify-center p-4" dir="rtl">
+    <div
+      dir="rtl"
+      style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-red-50 p-4"
+    >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-orange-200/30 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-red-200/30 rounded-full blur-3xl" />

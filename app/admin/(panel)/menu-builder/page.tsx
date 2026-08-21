@@ -154,7 +154,7 @@ export default function MenuBuilderPage() {
                     >
                       <div
                         {...provided.dragHandleProps}
-                        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+                        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-400"
                       >
                         <GripVertical className="h-5 w-5" />
                       </div>
@@ -174,7 +174,7 @@ export default function MenuBuilderPage() {
                             {item.type === 'category' ? 'فئة' : 'منتج'}
                           </Badge>
                           {item.status !== 'active' && (
-                            <Badge variant="outline" className="text-xs text-gray-500">
+                            <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400">
                               {item.status === 'draft' ? 'مسودة' : 'متوقف'}
                             </Badge>
                           )}

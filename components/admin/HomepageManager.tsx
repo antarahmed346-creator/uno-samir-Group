@@ -253,7 +253,7 @@ export default function HomepageManager() {
               variant="ghost"
               size="sm"
               onClick={resetForm}
-              className="text-gray-500 hover:text-red-500"
+              className="text-gray-500 dark:text-gray-400 hover:text-red-500"
             >
               <X className="h-4 w-4 ms-1" />
               إلغاء التعديل
@@ -268,7 +268,7 @@ export default function HomepageManager() {
             <select
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg bg-white"
+              className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-900"
               required
             >
               {Object.entries(SECTION_TYPES).map(([key, { label, icon }]) => (
@@ -397,8 +397,8 @@ export default function HomepageManager() {
       </form>
 
       {/* ====== Sections List ====== */}
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <div className="p-4 border-b bg-gray-50">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border overflow-hidden">
+        <div className="p-4 border-b bg-gray-50 dark:bg-gray-800">
           <h2 className="text-lg font-semibold">الأقسام ({sections.length})</h2>
         </div>
 
@@ -407,7 +407,7 @@ export default function HomepageManager() {
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
         ) : sections.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <p>لا توجد أقسام</p>
           </div>
         ) : (
@@ -434,7 +434,7 @@ export default function HomepageManager() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold">{section.title_ar || typeInfo.label}</h3>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
                         {typeInfo.label}
                       </span>
                       {!section.is_active && (
@@ -448,7 +448,7 @@ export default function HomepageManager() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{section.subtitle_ar}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{section.subtitle_ar}</p>
                     {section.image_url && (
                       <div className="relative w-20 h-12 rounded overflow-hidden mt-2">
                         <Image

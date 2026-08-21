@@ -6,14 +6,21 @@
 // KILL: من غيرها، زرار "القائمة" في الشريط السفلي هيوديك لصفحة فاضية
 
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { Phone, MessageCircle, FileText, Shield, MapPin, UtensilsCrossed } from 'lucide-react'
+import ThemeToggle from '@/components/public/ThemeToggle'
+import LanguageSwitcher from '@/components/public/LanguageSwitcher'
 
 const SUPPORT_WHATSAPP_NUMBER = '201000000000' // ⚠️ استبدله برقم المطعم الحقيقي
 const SUPPORT_PHONE_NUMBER = '+20 100 000 0000' // ⚠️ استبدله برقم المطعم الحقيقي
 
-export default function InfoPage() {
+export default async function InfoPage() {
+  const cookieStore = await cookies()
+  const locale = cookieStore.get('locale')?.value || 'ar'
+  const isRTL = locale !== 'en'
+
   return (
-    <div dir="rtl" className="max-w-2xl mx-auto min-h-[70vh]">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="max-w-2xl mx-auto min-h-[70vh]">
       <div className="bg-gradient-to-l from-red-600 to-orange-600 px-6 py-8 text-white flex items-center gap-4 md:rounded-2xl md:mt-4">
         <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
           <UtensilsCrossed className="w-6 h-6" />
@@ -45,10 +52,34 @@ export default function InfoPage() {
       </div>
 
       <div className="px-4 mt-5">
-        <p className="text-[11px] text-gray-400 font-bold mb-2 px-1">فروعنا</p>
+        <p className="text-[11px] text-gray-400 font-bold mb-2 px-1">
+          {isRTL ? 'فروعنا' : 'Our Branches'}
+        </p>
         <div className="bg-gray-50 rounded-2xl px-4 py-4 flex items-start gap-3 text-[13px] font-semibold">
           <MapPin className="w-[18px] h-[18px] text-red-600 flex-shrink-0 mt-0.5" />
-          مرسى مطروح، مصر — بيتزا أونو، فطير سمير، أونو كريب، على الروف
+          {isRTL
+            ? 'مرسى مطروح، مصر — بيتزا أونو، فطير سمير، أونو كريب، على الروف'
+            : 'Marsa Matrouh, Egypt — Pizza Uno, Feteer Samir, Uno Crêpe, Ala El Roof'}
+        </div>
+      </div>
+
+      <div className="px-4 mt-5">
+        <p className="text-[11px] text-gray-400 font-bold mb-2 px-1">
+          {isRTL ? 'الإعدادات' : 'Settings'}
+        </p>
+        <div className="bg-gray-50 rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-gray-100">
+            <span className="text-[13px] font-semibold">
+              {isRTL ? 'الوضع الليلي' : 'Dark Mode'}
+            </span>
+            <ThemeToggle />
+          </div>
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+            <span className="text-[13px] font-semibold">
+              {isRTL ? 'اللغة' : 'Language'}
+            </span>
+            <LanguageSwitcher currentLocale={locale} currentPath="/info" />
+          </div>
         </div>
       </div>
 

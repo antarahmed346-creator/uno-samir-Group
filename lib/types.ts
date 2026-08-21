@@ -208,3 +208,43 @@ export type CategoryUpdate = Partial<CategoryInsert>
 
 export type ProductInsert = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'brand' | 'category' | 'customization_groups'>
 export type ProductUpdate = Partial<ProductInsert>
+// ─── Chat System Types ─────────────────────────────────────────────────────
+
+export type ChatStatus = 'open' | 'closed'
+
+export interface ChatConversation {
+  id: string
+  customer_name: string | null
+  customer_phone: string | null
+  customer_uid: string | null
+  assigned_to: string | null
+  status: ChatStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatMessage {
+  id: string
+  conversation_id: string
+  sender_type: 'customer' | 'admin'
+  sender_id: string | null
+  message: string
+  created_at: string
+}
+
+// ─── Reservations Types ────────────────────────────────────────────────────
+
+export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
+
+export interface Reservation {
+  id: string
+  brand_id: string
+  customer_name: string
+  customer_phone: string
+  reservation_date: string
+  reservation_time: string
+  party_size: number
+  status: ReservationStatus
+  notes: string | null
+  created_at: string
+}

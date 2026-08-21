@@ -8,8 +8,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Bell, MapPin, Mic } from 'lucide-react'
-import ThemeToggle from '@/components/public/ThemeToggle'
+import { Search, MapPin, Mic } from 'lucide-react'
+import NotificationBell from '@/components/public/NotificationBell'
 
 export default function AppHeader({ locale = 'ar' }: { locale?: string }) {
   const [q, setQ] = useState('')
@@ -28,14 +28,7 @@ export default function AppHeader({ locale = 'ar' }: { locale?: string }) {
     <div className="md:hidden bg-white dark:bg-gray-900 px-4 pt-4 pb-2 transition-colors">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button
-            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative flex-shrink-0"
-            aria-label={isRTL ? 'الإشعارات' : 'Notifications'}
-          >
-            <Bell className="w-[18px] h-[18px] text-gray-700 dark:text-gray-300" />
-            <span className="absolute top-2 left-2.5 w-1.5 h-1.5 rounded-full bg-red-600" />
-          </button>
-          <ThemeToggle className="w-10 h-10" />
+          <NotificationBell />
         </div>
         <div className="text-center flex-1 min-w-0">
           <div className="text-[11px] font-extrabold text-red-600">

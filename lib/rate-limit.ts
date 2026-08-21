@@ -75,6 +75,43 @@ export const rateLimiters = {
     analytics: true,
     prefix: 'ratelimit:admin_api',
   }),
+
+  // Order Creation: 5 orders per 10 minutes per IP
+  // WHAT: Prevents fake/spam orders flooding the restaurant's order queue
+  // WHY:  5 orders in 10 minutes is generous for one real customer
+  //       (even a big family order), while blocking automated spam
+  // KILL: Remove this → anyone can flood /api/orders and fill the
+  //       admin's order list with thousands of fake orders
+  orderCreation: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, '10 m'),
+    analytics: true,
+    prefix: 'ratelimit:order_creation',
+  }),
+
+  // Reservation Creation: 5 reservations per 10 minutes per IP
+  // WHAT: Prevents spam table reservations flooding "على الروف"
+  // WHY:  نفس منطق order_creation بالظبط — 5 حجوزات في 10 دقايق
+  //       كافية لأي عميل حقيقي حتى لو بيجرب مرات، وبيمنع السكريبتات
+  // KILL: Remove this → anyone can flood the reservation queue with fake bookings
+  reservationCreation: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, '10 m'),
+    analytics: true,
+    prefix: 'ratelimit:reservation_creation',
+  }),
+
+  // Chat Messages: 20 messages per 5 minutes per IP
+  // WHAT: Prevents chat spam flooding the admin inbox
+  // WHY:  20 messages/5min is generous for a real conversation but
+  //       blocks automated spam bots targeting the chat endpoint
+  // KILL: Remove this → bots can flood admin chat with thousands of messages
+  chatMessage: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(20, '5 m'),
+    analytics: true,
+    prefix: 'ratelimit:chat_message',
+  }),
 }
 
 // ─── Helper: Get client identifier ───────────────────────────────────────

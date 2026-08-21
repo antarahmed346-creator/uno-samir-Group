@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowRight, CheckCircle } from 'lucide-react'
+import { Loader2, ArrowRight, CheckCircle, CalendarClock } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Order {
@@ -20,6 +20,7 @@ interface Order {
   customer_notes: string | null
   admin_notes: string | null
   created_at: string
+  scheduled_delivery_time: string | null
   accepted_at: string | null
   preparing_at: string | null
   ready_at: string | null
@@ -130,7 +131,7 @@ export default function OrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="text-center py-20 text-gray-500">
+      <div className="text-center py-20 text-gray-500 dark:text-gray-400">
         <p>الطلب غير موجود</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push('/admin/orders')}>
           العودة للقائمة
@@ -147,15 +148,37 @@ export default function OrderDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">طلب #{order.id.slice(0, 8)}</h1>
-          <p className="text-gray-500 mt-1">{order.brand?.name_ar}</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{order.brand?.name_ar}</p>
         </div>
         <Button variant="outline" onClick={() => router.push('/admin/orders')}>
           العودة للقائمة
         </Button>
       </div>
 
+      {/* Scheduled Delivery Banner */}
+      {order.scheduled_delivery_time && (
+        <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 rounded-xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+            <CalendarClock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <Badge className="bg-purple-600 text-white hover:bg-purple-600 mb-1">طلب مجدول</Badge>
+            <p className="font-semibold text-purple-900 dark:text-purple-200">
+              العميل حدد ميعاد توصيل:{' '}
+              {new Date(order.scheduled_delivery_time).toLocaleString('ar-EG', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Status Timeline */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border p-6">
         <h2 className="text-lg font-semibold mb-6">حالة الطلب</h2>
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
           {STATUS_FLOW.map((step, idx) => {
@@ -217,26 +240,26 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Customer Info */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border p-6">
         <h2 className="text-lg font-semibold mb-4">بيانات العميل</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-gray-500">الاسم</label>
+            <label className="text-sm text-gray-500 dark:text-gray-400">الاسم</label>
             <p className="font-medium">{order.customer_name}</p>
           </div>
           <div>
-            <label className="text-sm text-gray-500">رقم التليفون</label>
+            <label className="text-sm text-gray-500 dark:text-gray-400">رقم التليفون</label>
             <p className="font-medium" dir="ltr">{order.customer_phone}</p>
           </div>
           {order.customer_address && (
             <div className="md:col-span-2">
-              <label className="text-sm text-gray-500">العنوان</label>
+              <label className="text-sm text-gray-500 dark:text-gray-400">العنوان</label>
               <p className="font-medium">{order.customer_address}</p>
             </div>
           )}
           {order.customer_notes && (
             <div className="md:col-span-2">
-              <label className="text-sm text-gray-500">ملاحظات العميل</label>
+              <label className="text-sm text-gray-500 dark:text-gray-400">ملاحظات العميل</label>
               <p className="font-medium text-orange-600">{order.customer_notes}</p>
             </div>
           )}
@@ -244,15 +267,15 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Order Items */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border p-6">
         <h2 className="text-lg font-semibold mb-4">تفاصيل الطلب</h2>
         <div className="space-y-3">
           {order.items && order.items.length > 0 ? (
             order.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div>
                   <p className="font-medium">{item.product_name_ar}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {item.quantity} × {item.unit_price.toFixed(2)} ج.م
                   </p>
                 </div>
@@ -260,7 +283,7 @@ export default function OrderDetailPage() {
               </div>
             ))
           ) : (
-            <p className="text-gray-500 text-center py-4">لا توجد منتجات في هذا الطلب</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">لا توجد منتجات في هذا الطلب</p>
           )}
         </div>
         <div className="mt-4 pt-4 border-t space-y-2">

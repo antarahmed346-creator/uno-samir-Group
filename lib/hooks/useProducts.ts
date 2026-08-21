@@ -61,9 +61,23 @@ export function useCreateProduct() {
       if (error) throw new Error(error.message)
       return data as Product
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success('✅ تم إضافة المنتج بنجاح')
+
+      // WHAT: بيبعت إشعار للعملاء بس لما المنتج يتحط "مميز"
+      // WHY:  لو بعتنا إشعار مع كل منتج عادي، هيبقى إغراق للعميل
+      //       بإشعارات كتير — الأصناف المميزة بس تستاهل إشعار
+      if (data.is_featured && data.status === 'active') {
+        await supabase.from('customer_notifications').insert({
+          brand_id: data.brand_id,
+          type: 'new_product',
+          title_ar: `🍽️ صنف جديد: ${data.name_ar}`,
+          body_ar: data.description_ar || 'جربه دلوقتي',
+          link: `/product/${data.id}`,
+          image_url: data.main_image_url,
+        })
+      }
     },
     onError: (err) => {
       toast.error(`❌ خطأ: ${err.message}`)

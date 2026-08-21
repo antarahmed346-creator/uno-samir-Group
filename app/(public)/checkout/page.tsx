@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useState, useEffect, useMemo, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ShoppingBag, User, Phone, MapPin, Clock, CreditCard, Check } from 'lucide-react'
+import { ChevronLeft, ShoppingBag, User, Phone, MapPin, Clock, CalendarDays, CreditCard, Check } from 'lucide-react'
 import { useCartStore } from '@/lib/store/cart'
+import { useCouponStore, calculateDiscount } from '@/lib/store/coupon'
 import { toast } from 'sonner'
 
 // ─── Helper: read locale from cookie ───────────────────────────────────────
@@ -20,12 +21,79 @@ function useLocale() {
   )
 }
 
+// ─── Scheduled delivery: config + helpers ──────────────────────────────────
+// WHAT: ساعات عمل المطعم المسموح فيها بجدولة توصيل — من 10 صباحاً لحد 12 منتصف الليل
+// WHY:  مينفعش العميل يجدول طلب بره ساعات التشغيل المنطقية للمطعم
+// KILL: تغيير الرقمين ده يغيّر نطاق الأوقات المتاحة في كل الموقع
+const SCHEDULE_START_HOUR = 10
+const SCHEDULE_END_HOUR = 24 // آخر سلوت يبدأ 23:30 وينتهي 12 منتصف الليل
+const SCHEDULE_DAYS_AHEAD = 8 // النهاردة + 7 أيام قدام
+const SCHEDULE_BUFFER_MINUTES = 30 // أقل وقت مسموح بيه من دلوقتي لو العميل بيجدول "النهاردة"
+
+interface TimeSlot {
+  value: string // 'HH:mm'
+  hour: number
+  minute: number
+}
+
+function generateDeliveryDays(count: number): Date[] {
+  const days: Date[] = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  for (let i = 0; i < count; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    days.push(d)
+  }
+  return days
+}
+
+function generateTimeSlots(): TimeSlot[] {
+  const slots: TimeSlot[] = []
+  for (let h = SCHEDULE_START_HOUR; h < SCHEDULE_END_HOUR; h++) {
+    for (const m of [0, 30]) {
+      slots.push({ value: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`, hour: h, minute: m })
+    }
+  }
+  return slots
+}
+
+function isSameDay(a: Date, b: Date) {
+  return a.toDateString() === b.toDateString()
+}
+
+function getAvailableSlots(day: Date, allSlots: TimeSlot[]): TimeSlot[] {
+  const now = new Date()
+  if (!isSameDay(day, now)) return allSlots
+  const cutoff = new Date(now.getTime() + SCHEDULE_BUFFER_MINUTES * 60000)
+  return allSlots.filter((slot) => {
+    const slotDate = new Date(day)
+    slotDate.setHours(slot.hour, slot.minute, 0, 0)
+    return slotDate > cutoff
+  })
+}
+
+function formatDayLabel(day: Date, index: number, isRTL: boolean) {
+  if (index === 0) return isRTL ? 'النهاردة' : 'Today'
+  if (index === 1) return isRTL ? 'بكرة' : 'Tomorrow'
+  return day.toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function formatTimeLabel(slot: TimeSlot, isRTL: boolean) {
+  const period = slot.hour < 12 ? (isRTL ? 'ص' : 'AM') : (isRTL ? 'م' : 'PM')
+  let displayHour = slot.hour % 12
+  if (displayHour === 0) displayHour = 12
+  return `${displayHour}:${String(slot.minute).padStart(2, '0')} ${period}`
+}
+
 export default function CheckoutPage() {
   const locale = useLocale()
   const isRTL = locale === 'ar'
   
   const items = useCartStore((s) => s.items)
   const clearCart = useCartStore((s) => s.clearCart)
+  const appliedCoupon = useCouponStore((s) => s.coupon)
+  const clearCoupon = useCouponStore((s) => s.clearCoupon)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -38,14 +106,51 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  // ─── Scheduled delivery state ─────────────────────────────────────────
+  const deliveryDays = useMemo(() => generateDeliveryDays(SCHEDULE_DAYS_AHEAD), [])
+  const allTimeSlots = useMemo(() => generateTimeSlots(), [])
+  const [scheduledDayIndex, setScheduledDayIndex] = useState<number | null>(null)
+  const [scheduledTime, setScheduledTime] = useState<string | null>(null)
+
+  const availableSlotsForSelectedDay = useMemo(() => {
+    if (scheduledDayIndex === null) return []
+    return getAvailableSlots(deliveryDays[scheduledDayIndex], allTimeSlots)
+  }, [scheduledDayIndex, deliveryDays, allTimeSlots])
+
+  // لما العميل يفتح "حدد وقت" لأول مرة، نختار أول يوم فيه مواعيد متاحة
+  useEffect(() => {
+    if (formData.delivery_time !== 'scheduled' || scheduledDayIndex !== null) return
+    const firstAvailableIndex = deliveryDays.findIndex(
+      (day) => getAvailableSlots(day, allTimeSlots).length > 0
+    )
+    setScheduledDayIndex(firstAvailableIndex >= 0 ? firstAvailableIndex : 0)
+  }, [formData.delivery_time, scheduledDayIndex, deliveryDays, allTimeSlots])
+
+  // لو غيّر اليوم وكان الوقت المختار قبل كده بقى مش متاح، نصفّره
+  useEffect(() => {
+    if (scheduledTime && !availableSlotsForSelectedDay.some((s) => s.value === scheduledTime)) {
+      setScheduledTime(null)
+    }
+  }, [availableSlotsForSelectedDay, scheduledTime])
+
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const totalPrice = items.reduce((sum, i) => sum + i.totalPrice, 0)
+  const discount = calculateDiscount(appliedCoupon, totalPrice)
+  const finalTotal = Math.max(totalPrice - discount, 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // WHAT: التحقق إن العميل حدد يوم ووقت لو اختار "حدد وقت معين"
+    // WHY:  من غير التحقق ده ممكن يتبعت طلب بحالة scheduled من غير موعد فعلي
+    if (formData.delivery_time === 'scheduled' && (scheduledDayIndex === null || !scheduledTime)) {
+      toast.error(isRTL ? 'من فضلك حدد يوم ووقت التوصيل' : 'Please select a delivery date and time')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -56,6 +161,16 @@ export default function CheckoutPage() {
         toast.error(isRTL ? 'خطأ: لا يمكن تحديد البراند' : 'Error: Cannot determine brand')
         setLoading(false)
         return
+      }
+
+      // WHAT: بنبني الـ ISO timestamp بتاع الميعاد المجدول من اليوم والوقت المختارين
+      // WHY:  السيرفر محتاج قيمة TIMESTAMPTZ كاملة، مش يوم ووقت منفصلين
+      let scheduledDeliveryTime: string | null = null
+      if (formData.delivery_time === 'scheduled' && scheduledDayIndex !== null && scheduledTime) {
+        const [h, m] = scheduledTime.split(':').map(Number)
+        const dt = new Date(deliveryDays[scheduledDayIndex])
+        dt.setHours(h, m, 0, 0)
+        scheduledDeliveryTime = dt.toISOString()
       }
 
       const res = await fetch('/api/orders', {
@@ -70,7 +185,10 @@ export default function CheckoutPage() {
           payment_method: 'cash_on_delivery',
           delivery_fee: 0,
           subtotal: totalPrice,
-          total: totalPrice,
+          total: finalTotal,
+          coupon_code: appliedCoupon?.code || undefined,
+          discount_amount: discount,
+          scheduled_delivery_time: scheduledDeliveryTime,
           items: items.map(item => ({
             product_id: item.productId,
             product_name_ar: item.product.name_ar || item.product.name,
@@ -92,6 +210,7 @@ export default function CheckoutPage() {
       }
 
       clearCart()
+      clearCoupon()
       setSuccess(true)
     } catch (err) {
       console.error(err)
@@ -193,9 +312,21 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
-          <div className="border-t border-white/10 mt-4 pt-4 flex justify-between">
-            <span className="text-white font-semibold">{isRTL ? 'الإجمالي' : 'Total'}</span>
-            <span className="text-[#D4AF37] font-bold text-xl">{totalPrice} {isRTL ? 'ج.م' : 'EGP'}</span>
+          <div className="border-t border-white/10 mt-4 pt-4 space-y-1.5">
+            <div className="flex justify-between text-sm">
+              <span className="text-white/50">{isRTL ? 'المجموع الفرعي' : 'Subtotal'}</span>
+              <span className="text-white/70">{totalPrice} {isRTL ? 'ج.م' : 'EGP'}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-400">🎟️ {isRTL ? 'خصم' : 'Discount'} ({appliedCoupon?.code})</span>
+                <span className="text-green-400">-{discount.toFixed(0)} {isRTL ? 'ج.م' : 'EGP'}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-1.5">
+              <span className="text-white font-semibold">{isRTL ? 'الإجمالي' : 'Total'}</span>
+              <span className="text-[#D4AF37] font-bold text-xl">{finalTotal} {isRTL ? 'ج.م' : 'EGP'}</span>
+            </div>
           </div>
         </div>
 
@@ -279,9 +410,78 @@ export default function CheckoutPage() {
                     : 'border-white/10 text-white hover:border-white/30'
                 }`}
               >
-                {isRTL ? 'جدولة' : 'Schedule'}
+                {isRTL ? 'حدد وقت معين' : 'Schedule a time'}
               </button>
             </div>
+
+            {formData.delivery_time === 'scheduled' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-4 space-y-4 bg-[#1a1a1a] border border-white/10 rounded-xl p-4"
+              >
+                {/* Day picker */}
+                <div>
+                  <span className="text-white/60 text-xs mb-2 flex items-center gap-2">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    {isRTL ? 'اختر اليوم' : 'Choose a day'}
+                  </span>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {deliveryDays.map((day, idx) => {
+                      const hasSlots = getAvailableSlots(day, allTimeSlots).length > 0
+                      const isSelected = scheduledDayIndex === idx
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          type="button"
+                          disabled={!hasSlots}
+                          onClick={() => setScheduledDayIndex(idx)}
+                          className={`flex-shrink-0 px-3 py-2 rounded-lg border text-xs font-medium whitespace-nowrap transition-all ${
+                            isSelected
+                              ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
+                              : hasSlots
+                              ? 'border-white/10 text-white hover:border-white/30'
+                              : 'border-white/5 text-white/20 cursor-not-allowed'
+                          }`}
+                        >
+                          {formatDayLabel(day, idx, isRTL)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Time picker */}
+                <div>
+                  <span className="text-white/60 text-xs mb-2 block">
+                    {isRTL ? 'اختر الساعة (10 صباحاً - 12 منتصف الليل)' : 'Choose a time (10 AM - 12 AM)'}
+                  </span>
+                  {availableSlotsForSelectedDay.length === 0 ? (
+                    <p className="text-white/40 text-xs py-2">
+                      {isRTL ? 'لا يوجد مواعيد متاحة في هذا اليوم' : 'No available times on this day'}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                      {availableSlotsForSelectedDay.map((slot) => (
+                        <button
+                          key={slot.value}
+                          type="button"
+                          onClick={() => setScheduledTime(slot.value)}
+                          className={`py-2 rounded-lg border text-xs font-medium transition-all ${
+                            scheduledTime === slot.value
+                              ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
+                              : 'border-white/10 text-white hover:border-white/30'
+                          }`}
+                          dir="ltr"
+                        >
+                          {formatTimeLabel(slot, isRTL)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Notes */}
@@ -310,7 +510,7 @@ export default function CheckoutPage() {
             <span>
               {loading 
                 ? (isRTL ? 'جاري التأكيد...' : 'Confirming...') 
-                : `${isRTL ? 'تأكيد الطلب' : 'Confirm Order'} — ${totalPrice} ${isRTL ? 'ج.م' : 'EGP'}`
+                : `${isRTL ? 'تأكيد الطلب' : 'Confirm Order'} — ${finalTotal} ${isRTL ? 'ج.م' : 'EGP'}`
               }
             </span>
           </motion.button>

@@ -242,7 +242,7 @@ export default function UsersPage() {
 
               {/* Brand Access - Only for Brand Manager */}
               {newUser.role === 'brand_manager' && (
-                <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                <div className="space-y-3 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-blue-600" />
                     <Label className="font-semibold">البراندات المسموح بها *</Label>
@@ -299,7 +299,7 @@ export default function UsersPage() {
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="animate-pulse">
-              <CardContent className="p-6 h-20 bg-gray-100" />
+              <CardContent className="p-6 h-20 bg-gray-100 dark:bg-gray-800" />
             </Card>
           ))}
         </div>

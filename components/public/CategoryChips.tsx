@@ -29,12 +29,6 @@ export default function CategoryChips({ brands, locale = 'ar' }: { brands: Brand
           {locale === 'en' ? brand.name_en : brand.name_ar}
         </Link>
       ))}
-      <Link
-        href="/offers"
-        className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11.5px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-      >
-        🏷️ {locale === 'en' ? 'Offers' : 'عروض'}
-      </Link>
     </div>
   )
 }

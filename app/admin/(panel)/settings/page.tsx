@@ -143,7 +143,7 @@ export default function AdminSettingsPage() {
       )}
 
       {/* تحديث البيانات */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
           <User className="w-5 h-5" />
           بيانات الحساب
@@ -181,7 +181,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* تغيير الباسورد */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
           <Lock className="w-5 h-5" />
           تغيير كلمة المرور

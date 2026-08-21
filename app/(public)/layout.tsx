@@ -10,7 +10,10 @@ import RealtimeConnectionBanner from '@/components/public/RealtimeConnectionBann
 import AppHeader from '@/components/public/AppHeader'
 import BottomNav from '@/components/public/BottomNav'
 import SupportFab from '@/components/public/SupportFab'
+import ChatWidgetLoader from '@/components/public/ChatWidgetLoader'
 import ThemeToggle from '@/components/public/ThemeToggle'
+import NotificationBell from '@/components/public/NotificationBell'
+import { Toaster } from 'sonner'
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -91,6 +94,7 @@ export default async function PublicLayout({
                 <span className="md:hidden">📦</span>
               </Link>
 
+              <NotificationBell />
               <ThemeToggle />
               <CartIcon />
               <LanguageSwitcher currentLocale={locale} currentPath={currentPath} />
@@ -102,9 +106,14 @@ export default async function PublicLayout({
           {children}
         </main>
 
+        {/* WHAT: حاوية إشعارات الـ Toast للموقع العام */}
+        {/* WHY:  من غيرها toast.success/error مش هيظهر للعميل خالص */}
+        <Toaster position="top-center" richColors />
+
         {/* WHAT: القائمة السفلية + زرار الدعم — موبايل بس */}
         <BottomNav locale={locale} />
         <SupportFab />
+        <ChatWidgetLoader />
 
         {/* Footer */}
         <footer className="bg-gray-900 text-white mt-16">

@@ -14,20 +14,24 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 async function getStats() {
-  const supabase = await createServerClient()
-  
-  const [products, categories, offers, brands] = await Promise.all([
-    supabase.from('products').select('id', { count: 'exact' }),
-    supabase.from('categories').select('id', { count: 'exact' }),
-    supabase.from('offers').select('id', { count: 'exact' }),
-    supabase.from('brands').select('id', { count: 'exact' }),
-  ])
+  try {
+    const supabase = await createServerClient()
+    
+    const [products, categories, offers, brands] = await Promise.all([
+      supabase.from('products').select('id', { count: 'exact' }),
+      supabase.from('categories').select('id', { count: 'exact' }),
+      supabase.from('offers').select('id', { count: 'exact' }),
+      supabase.from('brands').select('id', { count: 'exact' }),
+    ])
 
-  return {
-    products: products.count ?? 0,
-    categories: categories.count ?? 0,
-    offers: offers.count ?? 0,
-    brands: brands.count ?? 0,
+    return {
+      products: products.count ?? 0,
+      categories: categories.count ?? 0,
+      offers: offers.count ?? 0,
+      brands: brands.count ?? 0,
+    }
+  } catch {
+    return { products: 0, categories: 0, offers: 0, brands: 0 }
   }
 }
 

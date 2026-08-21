@@ -34,9 +34,9 @@ export default function ProductsPage() {
       {isLoading ? (
         <p>جاري التحميل...</p>
       ) : (
-        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 dark:bg-gray-800 border-b">
               <tr>
                 <th className="px-4 py-3 text-right">المنتج</th>
                 <th className="px-4 py-3 text-right">السعر</th>
@@ -46,7 +46,7 @@ export default function ProductsPage() {
             </thead>
             <tbody className="divide-y">
               {products?.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50">
+                <tr key={p.id} className="hover:bg-gray-50 dark:bg-gray-800">
                   <td className="px-4 py-3 font-medium">{p.name_ar}</td>
                   <td className="px-4 py-3">{p.base_price} ج.م</td>
                   <td className="px-4 py-3">
@@ -71,7 +71,7 @@ export default function ProductsPage() {
               ))}
               {(!products || products.length === 0) && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     لا توجد منتجات
                   </td>
                 </tr>

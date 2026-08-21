@@ -6,9 +6,10 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 // شيل 'Plus' و 'GripVertical' من الـ import
-import { Loader2, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Pencil, Trash2, Eye, EyeOff, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/admin/ImageUpload'
+import BrandLocationsManager from '@/components/admin/BrandLocationsManager'
 
 interface Brand {
   id: string
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [locationsBrand, setLocationsBrand] = useState<{ id: string; name: string } | null>(null)
 
   // Form state
   const [formData, setFormData] = useState<Partial<Brand>>({
@@ -191,7 +193,7 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">إعدادات البراندات</h1>
 
       {/* ====== Form ====== */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-xl border p-6 space-y-6">
         <h2 className="text-lg font-semibold border-b pb-3">
           {editingId ? '✏️ تعديل براند' : '➕ براند جديد'}
         </h2>
@@ -229,7 +231,7 @@ export default function SettingsPage() {
               dir="ltr"
               required
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               هيكون الرابط: /{formData.slug || 'example'}
             </p>
           </div>
@@ -351,8 +353,8 @@ export default function SettingsPage() {
       </form>
 
       {/* ====== Brands List ====== */}
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <div className="p-4 border-b bg-gray-50">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border overflow-hidden">
+        <div className="p-4 border-b bg-gray-50 dark:bg-gray-800">
           <h2 className="text-lg font-semibold">البراندات ({brands.length})</h2>
         </div>
 
@@ -361,7 +363,7 @@ export default function SettingsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
         ) : brands.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <p>لا توجد براندات</p>
           </div>
         ) : (
@@ -374,7 +376,7 @@ export default function SettingsPage() {
                 }`}
               >
                 {/* Logo */}
-                <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-white flex-shrink-0">
+                <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-white dark:bg-gray-900 flex-shrink-0">
                   {brand.logo_url ? (
                     <Image src={brand.logo_url} alt={brand.name_ar} fill className="object-cover" />
                   ) : (
@@ -388,14 +390,14 @@ export default function SettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-lg">{brand.name_ar}</h3>
-                    <span className="text-sm text-gray-500">({brand.name_en})</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">({brand.name_en})</span>
                     {!brand.is_active && (
                       <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
                         معطل
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500">/{brand.slug}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">/{brand.slug}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span
                       className="w-4 h-4 rounded-full border"
@@ -412,6 +414,13 @@ export default function SettingsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setLocationsBrand({ id: brand.id, name: brand.name_ar })}
+                    className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    title="المواقع"
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => handleToggleActive(brand.id, brand.is_active)}
                     className={`p-2 rounded-lg transition-colors ${
@@ -450,6 +459,15 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {locationsBrand && (
+        <BrandLocationsManager
+          brandId={locationsBrand.id}
+          brandName={locationsBrand.name}
+          open={!!locationsBrand}
+          onOpenChange={(open) => !open && setLocationsBrand(null)}
+        />
+      )}
     </div>
   )
 }

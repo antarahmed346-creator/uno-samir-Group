@@ -1,43 +1,96 @@
-// app/api/admin/users/route.ts — FIXED VERSION
+// app/api/admin/users/route.ts — SECURED VERSION
+
+// WHAT: بيتأكد إن الشخص اللي بيبعت الطلب هو super_admin حقيقي مسجل دخول
+// WHY:  الراوت ده بيستخدم صلاحيات كاملة على قاعدة البيانات (service role)
+//       عشان ينشئ أو يمسح حسابات أدمن — من غير الفحص ده، أي حد بره
+//       الموقع كان يقدر يعمل لنفسه حساب Super Admin بأي إيميل وباسورد
+// KILL: مسح الدالة دي بيرجّع الثغرة اللي كانت موجودة — أي حد على
+//       الإنترنت يقدر يتحكم في الموقع بالكامل من غير باسورد خالص
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+async function requireSuperAdmin() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // Server Components can't write cookies
+          }
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false as const, status: 401, error: 'Unauthorized' }
+
+  const { data: adminUser, error } = await supabase
+    .from('admin_users')
+    .select('role, is_active')
+    .eq('id', user.id)
+    .single()
+
+  if (error || !adminUser || !adminUser.is_active || adminUser.role !== 'super_admin') {
+    return { ok: false as const, status: 403, error: 'Forbidden — super_admin only' }
+  }
+
+  return { ok: true as const }
+}
+
 export async function POST(request: Request) {
-  console.log('🚀 API /api/admin/users called')
+  const auth = await requireSuperAdmin()
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
 
   try {
     const body = await request.json()
-    console.log('📦 Request body:', body)
-
     const { email, password, full_name, role, brand_access } = body
 
     if (!email || !password) {
-      console.log('❌ Missing email or password')
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    // WHAT: Uses admin client with service role key for privileged operations
-    // WHY:  Creating users requires admin privileges that anon key doesn't have
-    // KILL: Using createServerClient (anon key) will fail with permission error
+    // WHAT: منع إنشاء super_admin تاني من نفس الفورم
+    // WHY:  الأونر (super_admin) لازم يتعمله يدوي بس من Supabase مباشرة —
+    //       مش عن طريق فورم ممكن يتضغط بالغلط أو يتساء استخدامه
+    if (role === 'super_admin') {
+      return NextResponse.json(
+        { error: 'لا يمكن إنشاء حساب Super Admin من هذه الشاشة' },
+        { status: 400 }
+      )
+    }
+
+    if ((role === 'brand_manager' || role === 'content_editor') && (!brand_access || brand_access.length === 0)) {
+      return NextResponse.json(
+        { error: 'لازم تحدد براند واحد على الأقل لهذا الدور' },
+        { status: 400 }
+      )
+    }
+
     const supabase = createAdminClient()
 
-    // 1. Create user in Supabase Auth
-    console.log('🔐 Creating auth user...')
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     })
 
-    if (authError) {
-      console.log('❌ Auth error:', authError.message)
-      return NextResponse.json({ error: authError.message }, { status: 400 })
+    if (authError || !authData.user) {
+      return NextResponse.json({ error: authError?.message || 'Failed to create user' }, { status: 400 })
     }
 
-    console.log('✅ Auth user created:', authData.user.id)
-
-    // 2. Insert into admin_users
-    console.log('📝 Inserting into admin_users...')
     const { data: adminData, error: adminError } = await supabase
       .from('admin_users')
       .insert({
@@ -54,21 +107,16 @@ export async function POST(request: Request) {
       .single()
 
     if (adminError) {
-      console.log('❌ Admin insert error:', adminError.message)
-      // Rollback: delete auth user if admin_users insert fails
       await supabase.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json({ error: adminError.message }, { status: 400 })
     }
 
-    console.log('✅ User created successfully!')
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       user: adminData,
-      message: 'تم إنشاء المستخدم بنجاح' 
+      message: 'تم إنشاء المستخدم بنجاح',
     })
-
   } catch (error) {
-    console.log('❌ Server error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -77,6 +125,11 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireSuperAdmin()
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -87,28 +140,32 @@ export async function DELETE(request: Request) {
 
     const supabase = createAdminClient()
 
-    // 1. Delete from admin_users
-    const { error: adminError } = await supabase
+    const { data: targetUser } = await supabase
       .from('admin_users')
-      .delete()
+      .select('role')
       .eq('id', id)
+      .single()
 
+    // WHAT: يمنع حذف آخر حساب super_admin موجود في النظام
+    // WHY:  لو اتحذف، محدش هيقدر يدخل لوحة التحكم تاني أبداً
+    if (targetUser?.role === 'super_admin') {
+      return NextResponse.json(
+        { error: 'لا يمكن حذف حساب Super Admin من هذه الشاشة' },
+        { status: 400 }
+      )
+    }
+
+    const { error: adminError } = await supabase.from('admin_users').delete().eq('id', id)
     if (adminError) {
       return NextResponse.json({ error: adminError.message }, { status: 400 })
     }
 
-    // 2. Delete from auth.users
     const { error: authError } = await supabase.auth.admin.deleteUser(id)
-
     if (authError) {
       return NextResponse.json({ error: authError.message }, { status: 400 })
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'تم حذف المستخدم بنجاح' 
-    })
-
+    return NextResponse.json({ success: true, message: 'تم حذف المستخدم بنجاح' })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

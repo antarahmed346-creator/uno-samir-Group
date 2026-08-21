@@ -61,9 +61,22 @@ export function useCreateOffer() {
       if (error) throw new Error(error.message)
       return data as Offer
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['offers'] })
       toast.success('✅ تم إضافة العرض بنجاح')
+
+      // WHAT: بيبعت إشعار تلقائي للعملاء لما عرض نشط جديد يتعمل
+      // WHY:  العميل يعرف بالعروض من غير ما الأونر يعمل أي خطوة إضافية
+      // KILL: من غيره، العميل مش هيعرف بالعروض الجديدة أبداً
+      if (data.status === 'active') {
+        await supabase.from('customer_notifications').insert({
+          brand_id: data.brand_id,
+          type: 'new_offer',
+          title_ar: `🏷️ عرض جديد: ${data.title_ar}`,
+          body_ar: data.description_ar || 'اكتشف العرض الجديد دلوقتي',
+          link: '/offers',
+        })
+      }
     },
     onError: (err) => {
       toast.error(`❌ خطأ: ${err.message}`)

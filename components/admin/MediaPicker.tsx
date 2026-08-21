@@ -83,7 +83,7 @@ export function MediaPicker({
 
       {/* Modal Content */}
       <div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4"
+        className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4"
         dir="rtl"
       >
         {/* Header */}
@@ -91,7 +91,7 @@ export function MediaPicker({
           <h2 className="text-xl font-bold">اختيار صورة</h2>
           <button
             onClick={() => onOpenChange(false)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -125,7 +125,7 @@ export function MediaPicker({
           {!loading && media.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <ImagePlus className="h-12 w-12 text-gray-300" />
-              <p className="text-gray-500">لا توجد صور في المكتبة</p>
+              <p className="text-gray-500 dark:text-gray-400">لا توجد صور في المكتبة</p>
               <p className="text-gray-400 text-sm">
                 ارفع صور جديدة من صفحة الصور أولاً
               </p>
@@ -136,7 +136,7 @@ export function MediaPicker({
           {!loading && media.length > 0 && filteredMedia.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Search className="h-12 w-12 text-gray-300" />
-              <p className="text-gray-500">
+              <p className="text-gray-500 dark:text-gray-400">
                 لا توجد نتائج لـ &quot;{searchQuery}&quot;
               </p>
               <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>

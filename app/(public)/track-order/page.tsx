@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Search, Package, CheckCircle, Clock, MapPin, Phone, User, ChevronDown } from 'lucide-react'
+import { createBrowserClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 interface OrderItem {
   id: string
@@ -64,6 +66,45 @@ export default function TrackOrderPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [error, setError] = useState('')
   const [locale, setLocale] = useState('ar')
+
+  // WHAT: بيتابع تغيير حالة الطلب المفتوح لحظياً وبيبعت إشعار toast
+  // WHY:  العميل وهو فاتح صفحة تتبع الطلب يعرف فوراً لو المطعم
+  //       غيّر حالة طلبه، من غير ما يعمل Refresh بنفسه
+  // KILL: من غيره، العميل لازم يعمل Refresh يدوي عشان يشوف التحديث
+  useEffect(() => {
+    if (!selectedOrder) return
+
+    const supabase = createBrowserClient()
+    const statusLabels: Record<string, string> = {
+      pending: 'معلق', accepted: 'مقبول', preparing: 'قيد التحضير',
+      ready: 'جاهز', out_for_delivery: 'في الطريق إليك',
+      delivered: 'تم التوصيل', cancelled: 'ملغي',
+    }
+
+    const channel = supabase
+      .channel(`track-order-${selectedOrder.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${selectedOrder.id}` },
+        (payload) => {
+          const updated = payload.new as Order
+          setSelectedOrder(updated)
+          toast.success(`🔔 تحديث طلبك: ${statusLabels[updated.status] || updated.status}`, {
+            duration: 6000,
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+    // WHAT: بنعتمد بس على selectedOrder?.id مش الكائن كامله
+    // WHY:  لو حطينا selectedOrder كامل هنا، كل تحديث لحظي جاي من
+    //       نفس الاشتراك هيسبب فصل واشتراك تاني من غير داعي —
+    //       إحنا محتاجين نعيد الاشتراك بس لما الطلب المختار يتغير فعلياً
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrder?.id])
 
   useEffect(() => {
     const match = document.cookie.match(/locale=([^;]+)/)

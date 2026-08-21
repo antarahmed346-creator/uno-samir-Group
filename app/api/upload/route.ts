@@ -1,6 +1,8 @@
 // app/api/upload/route.ts
 import { v2 as cloudinary } from 'cloudinary'
 import { NextResponse } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -8,7 +10,48 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
+// WHAT: بيتأكد إن اللي بيرفع صورة مسجل دخول كأدمن فعلاً
+// WHY:  من غيره أي حد على الإنترنت يقدر يرفع صور غير محدودة
+//       على حساب Cloudinary بتاعك ويستهلك المساحة والتكلفة
+// KILL: مسح الفحص ده بيرجّع إمكانية الرفع المفتوح للكل
+async function requireAdmin() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // Server Components can't write cookies
+          }
+        },
+      },
+    }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data: adminUser } = await supabase
+    .from('admin_users')
+    .select('is_active')
+    .eq('id', user.id)
+    .single()
+
+  return !!adminUser?.is_active
+}
+
 export async function POST(request: Request) {
+  const isAdmin = await requireAdmin()
+  if (!isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File

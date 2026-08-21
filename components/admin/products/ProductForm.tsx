@@ -249,7 +249,7 @@ export default function ProductForm({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">خيارات المنتج</h3>
-            <p className="text-sm text-gray-500">الحجم، الإضافات، نوع العجينة...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">الحجم، الإضافات، نوع العجينة...</p>
           </div>
           <button
             type="button"
@@ -294,7 +294,7 @@ export default function ProductForm({
         <button
           type="button"
           onClick={() => router.push('/admin/products')}
-          className="px-6 py-2 border rounded-lg hover:bg-gray-50"
+          className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:bg-gray-800"
         >
           إلغاء
         </button>
@@ -321,9 +321,9 @@ function GroupSection({
   })
 
   return (
-    <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4 bg-white">
+    <div className="border-2 border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-4 bg-white dark:bg-gray-900">
       {/* Group Header */}
-      <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
         <div className="flex items-center gap-2">
           <GripVertical className="w-5 h-5 text-gray-400" />
           <span className="font-bold">مجموعة {groupIndex + 1}</span>
@@ -377,7 +377,7 @@ function GroupSection({
       {/* Options */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-bold text-gray-700">الخيارات المتاحة</h4>
+          <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">الخيارات المتاحة</h4>
           <button
             type="button"
             onClick={() => appendOption({ name_ar: '', name_en: '', price_modifier: 0, is_default: false })}
@@ -389,9 +389,9 @@ function GroupSection({
         </div>
 
         {options.map((option, optionIndex) => (
-          <div key={option.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end bg-gray-50 p-3 rounded-lg border">
+          <div key={option.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border">
             <div className="space-y-1">
-              <label className="text-xs text-gray-500">الاسم (عربي)</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">الاسم (عربي)</label>
               <input 
                 {...register(`customization_groups.${groupIndex}.options.${optionIndex}.name_ar`)} 
                 className="w-full px-2 py-1 border rounded text-sm" 
@@ -399,7 +399,7 @@ function GroupSection({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-gray-500">الاسم (English)</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">الاسم (English)</label>
               <input 
                 {...register(`customization_groups.${groupIndex}.options.${optionIndex}.name_en`)} 
                 className="w-full px-2 py-1 border rounded text-sm" 
@@ -408,7 +408,7 @@ function GroupSection({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-gray-500 flex items-center gap-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 سعر إضافي
                 <span title="اكتب 0 لو مفيش زيادة في السعر">(جنيه)</span>
               </label>

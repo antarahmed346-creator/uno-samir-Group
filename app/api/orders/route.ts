@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { rateLimiters, getClientIdentifier, checkRateLimit } from '@/lib/rate-limit'
 
 // Zod schema for creating an order
 const orderItemSchema = z.object({
@@ -31,6 +32,19 @@ const createOrderSchema = z.object({
   total: z.number().min(0),
   payment_method: z.string().default('cash_on_delivery'),
   customer_notes: z.string().optional(),
+  coupon_code: z.string().optional(),
+  discount_amount: z.number().min(0).default(0),
+  // WHAT: ميعاد التوصيل اللي العميل حدده بنفسه، بدل "أسرع وقت ممكن"
+  // WHY:  لازم نتحقق إنه فعلاً في المستقبل (مش تاريخ فات) قبل ما نسجله
+  // KILL: من غيره حد يقدر يبعت تاريخ في الماضي أو قيمة مش صالحة كـ timestamp
+  scheduled_delivery_time: z
+    .string()
+    .datetime()
+    .refine((val) => new Date(val).getTime() > Date.now(), {
+      message: 'scheduled_delivery_time must be in the future',
+    })
+    .nullable()
+    .optional(),
 })
 
 // Helper: Create service client
@@ -136,6 +150,19 @@ export async function GET(request: NextRequest) {
 // POST /api/orders — Public (guest checkout)
 export async function POST(request: NextRequest) {
   try {
+    // WHAT: يمنع أي جهاز يبعت أكتر من 5 طلبات في 10 دقايق
+    // WHY:  الموقع بقى منشور فعلياً على الإنترنت — لازم نمنع
+    //       سبام الطلبات الوهمية اللي ممكن تغرق لوحة تحكم المطعم
+    // KILL: من غيره أي حد يقدر يبعت آلاف الطلبات الوهمية بضغطة سكريبت
+    const identifier = getClientIdentifier(request)
+    const rl = await checkRateLimit(rateLimiters.orderCreation, identifier)
+    if (!rl.allowed) {
+      return Response.json(
+        { error: 'محاولات كتير أوي، حاول تاني بعد شوية' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const result = createOrderSchema.safeParse(body)
 
@@ -149,6 +176,50 @@ export async function POST(request: NextRequest) {
     const data = result.data
     const serviceClient = getServiceClient()
 
+    // WHAT: بيعيد التحقق من الكوبون على السيرفر، مش بيثق في القيمة
+    //       اللي المتصفح بعتها
+    // WHY:  لو ثقنا في discount_amount الجاي من العميل، أي حد يقدر
+    //       يفتح الـ Developer Tools ويغيّر الرقم لأي قيمة يحبها
+    //       ويطلب بخصم وهمي 100% مثلاً
+    // KILL: من غيره فيه ثغرة تلاعب بالأسعار في كل طلب
+    let verifiedDiscount = 0
+    let matchedOfferId: string | null = null
+
+    if (data.coupon_code) {
+      const { data: offer } = await serviceClient
+        .from('offers')
+        .select('*, offer_products(product_id)')
+        .ilike('promo_code', data.coupon_code.trim())
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (offer) {
+        const now = new Date()
+        const withinDate =
+          new Date(offer.starts_at) <= now &&
+          (!offer.expires_at || new Date(offer.expires_at) >= now)
+        const withinLimit = !offer.usage_limit || offer.usage_count < offer.usage_limit
+        const brandMatches = !offer.brand_id || offer.brand_id === data.brand_id
+        const linkedIds: string[] = (offer.offer_products || []).map(
+          (op: { product_id: string }) => op.product_id
+        )
+        const productMatches =
+          linkedIds.length === 0 || data.items.some((i) => linkedIds.includes(i.product_id))
+        const meetsMin = !offer.min_order_value || data.subtotal >= offer.min_order_value
+
+        if (withinDate && withinLimit && brandMatches && productMatches && meetsMin) {
+          let calc = 0
+          if (offer.type === 'percentage') calc = (data.subtotal * offer.discount_value) / 100
+          else if (offer.type === 'fixed') calc = offer.discount_value
+          if (offer.max_discount && calc > offer.max_discount) calc = offer.max_discount
+          verifiedDiscount = Math.min(calc, data.subtotal)
+          matchedOfferId = offer.id
+        }
+      }
+    }
+
+    const verifiedTotal = Math.max(data.subtotal + data.delivery_fee - verifiedDiscount, 0)
+
     // Insert order
     const { data: order, error: orderError } = await serviceClient
       .from('orders')
@@ -159,9 +230,12 @@ export async function POST(request: NextRequest) {
         customer_address: data.customer_address,
         subtotal: data.subtotal,
         delivery_fee: data.delivery_fee,
-        total: data.total,
+        total: verifiedTotal,
+        coupon_code: matchedOfferId ? data.coupon_code : null,
+        discount_amount: verifiedDiscount,
         payment_method: data.payment_method,
         customer_notes: data.customer_notes,
+        scheduled_delivery_time: data.scheduled_delivery_time || null,
         status: 'pending',
       })
       .select()
@@ -170,6 +244,11 @@ export async function POST(request: NextRequest) {
     if (orderError || !order) {
       console.error('[Orders POST] Insert error:', orderError)
       return Response.json({ error: 'Failed to create order' }, { status: 500 })
+    }
+
+    // WHAT: بيزود عداد استخدام الكوبون بعد ما الطلب اتسجل بنجاح
+    if (matchedOfferId) {
+      await serviceClient.rpc('increment_offer_usage', { offer_id_input: matchedOfferId })
     }
 
     // Insert order items

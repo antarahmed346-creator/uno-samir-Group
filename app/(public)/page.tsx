@@ -6,7 +6,6 @@ import {
   BrandsSection,
   FeaturedSection,
   OffersSection,
-  GallerySection,
   TestimonialsSection,
   CustomSection,
 } from '@/components/homepage/sections'
@@ -84,8 +83,58 @@ export default async function Homepage() {
     ])
 
   const brands = brandsRaw as unknown as Brand[] | null
-  const featuredProducts = productsRaw as unknown as Product[] | null
+  const featuredProductsRaw = productsRaw as unknown as Product[] | null
   const activeOffers = offersRaw as unknown as Offer[] | null
+
+  // WHAT: نجيب مقاسات/أوزان كل منتج مميز (لو الأدمن ضافها) عشان تظهر تحت
+  //       الكارت في الهوم بيدج، والعميل يقدر يختارها من غير ما يفتح صفحة المنتج
+  // WHY:  أسماء الأعمدة هنا لازم تطابق الأعمدة الحقيقية اللي
+  //       ProductFormWrapper.tsx بيكتب بيها فعلياً وقت حفظ منتج من الأدمن
+  //       (is_required/min_selections/max_selections/price_modifier) — مش
+  //       نفس الأسماء اللي AddToCartButton بيستناها كـ props (required/
+  //       min_select/max_select/price_adjustment)، فبنعمل mapping هنا
+  const featuredIds = featuredProductsRaw?.map((p) => p.id) || []
+  let featuredGroupsRaw: {
+    id: string; name_ar: string; name_en: string; is_required: boolean
+    min_selections: number; max_selections: number | null; product_id: string
+    customization_options: { id: string; name_ar: string; name_en: string; price_modifier: number }[]
+  }[] = []
+
+  if (featuredIds.length > 0) {
+    const { data, error } = await supabase
+      .from('customization_groups')
+      .select(`
+        id, name_ar, name_en, is_required, min_selections, max_selections, product_id,
+        customization_options ( id, name_ar, name_en, price_modifier )
+      `)
+      .in('product_id', featuredIds)
+
+    if (error) console.error('[Homepage] customization_groups fetch failed:', error.message)
+    featuredGroupsRaw = data || []
+  }
+
+  const featuredProducts = featuredProductsRaw?.map((product) => {
+    const brand = brands?.find((b) => b.id === product.brand_id)
+    const groups = featuredGroupsRaw
+      .filter((g) => g.product_id === product.id)
+      .map((g) => ({
+        id: g.id,
+        name: g.name_ar,
+        name_ar: g.name_ar,
+        name_en: g.name_en,
+        required: g.is_required,
+        min_select: g.is_required ? Math.max(1, g.min_selections || 1) : (g.min_selections || 0),
+        max_select: g.max_selections ?? 1,
+        options: (g.customization_options || []).map((o) => ({
+          id: o.id,
+          name: o.name_ar,
+          name_ar: o.name_ar,
+          name_en: o.name_en,
+          price_adjustment: o.price_modifier || 0,
+        })),
+      }))
+    return { ...product, customization_groups: groups, brand }
+  }) || null
 
   return (
     <>
@@ -118,8 +167,6 @@ export default async function Homepage() {
                   )
                 case 'offers':
                   return <OffersSection key={section.id} section={section} offers={activeOffers} locale={locale} />
-                case 'gallery':
-                  return <GallerySection key={section.id} section={section} locale={locale} />
                 case 'testimonials':
                   return <TestimonialsSection key={section.id} section={section} locale={locale} />
                 case 'custom':

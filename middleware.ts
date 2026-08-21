@@ -17,8 +17,8 @@ export async function middleware(request: NextRequest) {
 
   // ─── Admin routes: Auth + Rate Limiting ───────────────────────────────
   if (pathname.startsWith('/admin')) {
-    // Rate limit login page specifically
-    if (pathname === '/admin/login') {
+    // Rate limit login POST requests only (not page views)
+    if (pathname === '/admin/login' && request.method === 'POST') {
       const identifier = getClientIdentifier(request)
       const result = await checkRateLimit(rateLimiters.adminLogin, identifier)
 

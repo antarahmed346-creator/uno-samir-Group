@@ -10,6 +10,7 @@ import {
 } from '@/lib/seo'
 import { BRAND_NAMES } from '@/lib/types'
 import RealtimeProvider from '@/components/public/RealtimeProvider'
+import BrandLocationButton from '@/components/public/BrandLocationButton'
 
 interface Product {
   id: string
@@ -78,6 +79,12 @@ export default async function BrandPage({ params }: Props) {
     .eq('is_available', true)
     .order('sort_order')
 
+  const { data: locations } = await supabase
+    .from('brand_locations')
+    .select('id, label_ar, label_en, address, google_maps_url')
+    .eq('brand_id', brand.id)
+    .order('sort_order')
+
   const colors: Record<string, string> = {
     'pizza-uno': 'from-green-600 to-green-800',
     'feteer-samir': 'from-red-600 to-red-800',
@@ -115,12 +122,15 @@ export default async function BrandPage({ params }: Props) {
                   {t(brand.description_ar, brand.description_en, '')}
                 </p>
               )}
-              <Link
-                href={localize(`/${brand.slug}/menu`)}
-                className="inline-block mt-8 px-8 py-4 bg-white text-gray-900 rounded-full font-bold hover:bg-gray-100 transition shadow-lg"
-              >
-                {isRTL ? 'شوف القائمة الكاملة 📋' : 'View Full Menu 📋'}
-              </Link>
+              <div className="flex flex-wrap items-center justify-center">
+                <Link
+                  href={localize(`/${brand.slug}/menu`)}
+                  className="inline-block mt-8 px-8 py-4 bg-white text-gray-900 rounded-full font-bold hover:bg-gray-100 transition shadow-lg"
+                >
+                  {isRTL ? 'شوف القائمة الكاملة 📋' : 'View Full Menu 📋'}
+                </Link>
+                <BrandLocationButton locations={locations || []} locale={locale} />
+              </div>
             </div>
           </section>
 

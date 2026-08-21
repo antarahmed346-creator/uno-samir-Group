@@ -42,6 +42,9 @@ export default async function MenuPage({ params, searchParams }: Props) {
   const locale = cookieStore.get('locale')?.value || 'ar'
   const isRTL = locale === 'ar'
 
+  const t = (ar: string | null | undefined, en: string | null | undefined, fallback: string) =>
+    locale === 'en' ? (en || ar || fallback) : (ar || en || fallback)
+
   const supabase = await createServerClient()
 
   const { data: brand } = await supabase
@@ -75,6 +78,10 @@ export default async function MenuPage({ params, searchParams }: Props) {
 
   const productIds = products?.map(p => p.id) || []
 
+  // WHAT: الشكل اللي AddToCartButton بيستناه (required/min_select/max_select/options/price_adjustment)
+  // WHY:  مختلف عن أسماء أعمدة قاعدة البيانات الحقيقية (is_required/min_selections/
+  //       max_selections/customization_options/price_modifier) اللي بيستخدمها ProductForm
+  //       فعلياً وقت الحفظ — فبنعمل mapping هنا بدل ما نغيّر AddToCartButton نفسه
   interface CustomizationOption {
     id: string
     name: string
@@ -87,25 +94,45 @@ export default async function MenuPage({ params, searchParams }: Props) {
     name: string
     name_ar: string
     required: boolean
-    min_select: number | null
-    max_select: number | null
+    min_select: number
+    max_select: number
     product_id: string
-    customization_options: CustomizationOption[]
+    options: CustomizationOption[]
   }
 
   let customizationGroups: CustomizationGroup[] = []
   if (productIds.length > 0) {
-    const { data: groups } = await supabase
+    // WHAT: أسماء الأعمدة هنا لازم تطابق قاعدة البيانات الحقيقية بالظبط —
+    //       نفس الأسماء اللي ProductFormWrapper.tsx بيكتب بيها لما الأدمن يحفظ منتج
+    const { data: groups, error: groupsError } = await supabase
       .from('customization_groups')
       .select(`
-        id, name, name_ar, required, min_select, max_select, product_id,
+        id, name_ar, name_en, is_required, min_selections, max_selections, product_id,
         customization_options (
-          id, name, name_ar, price_adjustment
+          id, name_ar, name_en, price_modifier
         )
       `)
       .in('product_id', productIds)
 
-    customizationGroups = groups || []
+    if (groupsError) {
+      console.error('[MenuPage] customization_groups fetch failed:', groupsError.message)
+    }
+
+    customizationGroups = (groups || []).map((g) => ({
+      id: g.id,
+      name: t(g.name_ar, g.name_en, g.name_ar),
+      name_ar: g.name_ar,
+      required: g.is_required,
+      min_select: g.is_required ? Math.max(1, g.min_selections || 1) : (g.min_selections || 0),
+      max_select: g.max_selections ?? 1,
+      product_id: g.product_id,
+      options: (g.customization_options || []).map((o) => ({
+        id: o.id,
+        name: t(o.name_ar, o.name_en, o.name_ar),
+        name_ar: o.name_ar,
+        price_adjustment: o.price_modifier || 0,
+      })),
+    }))
   }
 
   const productsWithGroups = products?.map(product => ({
@@ -124,9 +151,6 @@ export default async function MenuPage({ params, searchParams }: Props) {
 
   const localize = (path: string) =>
     locale === 'en' ? (path === '/' ? '/en' : `/en${path}`) : path
-
-  const t = (ar: string | null | undefined, en: string | null | undefined, fallback: string) =>
-    locale === 'en' ? (en || ar || fallback) : (ar || en || fallback)
 
   return (
     <>

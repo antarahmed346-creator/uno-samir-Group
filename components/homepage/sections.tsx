@@ -12,6 +12,7 @@ import {
 } from '@/lib/types'
 import { Star, Clock, Tag } from 'lucide-react'
 import FavoriteButton from '@/components/public/FavoriteButton'
+import AddToCartButton from '@/components/public/AddToCartButton'
 import DOMPurify from 'isomorphic-dompurify'
 
 // WHAT: ينضف أي HTML جاي من الـ CustomSection قبل ما يترندر
@@ -86,7 +87,7 @@ export function HeroSection({ section, locale = 'ar' }: HeroSectionProps) {
     if (slides.length <= 1) return
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length)
-    }, 6000)
+    }, 5000)
     return () => clearInterval(timer)
   }, [slides.length])
 
@@ -234,9 +235,34 @@ export function BrandsSection({ section, brands, locale = 'ar' }: BrandsSectionP
 
 // ─── Featured Products Section ───────────────────────────────────
 
+// WHAT: نفس شكل Product من lib/types.ts بس زيادة عليه المقاسات/الأوزان
+//       (لو موجودة) والبراند — عشان كارت الهوم بيدج يقدر يعرضهم
+//       ويسمح للعميل يختار حجم من غير ما يفتح صفحة المنتج
+interface ProductOption {
+  id: string
+  name: string
+  name_ar: string
+  name_en: string
+  price_adjustment: number
+}
+interface ProductCustomizationGroup {
+  id: string
+  name: string
+  name_ar: string
+  name_en: string
+  required: boolean
+  min_select: number
+  max_select: number
+  options: ProductOption[]
+}
+type ProductWithOptions = Omit<Product, 'customization_groups'> & {
+  customization_groups?: ProductCustomizationGroup[]
+  brand?: Brand
+}
+
 interface FeaturedSectionProps {
   section: HomepageSection
-  products: Product[] | null
+  products: ProductWithOptions[] | null
   locale?: string
 }
 
@@ -265,13 +291,20 @@ export function FeaturedSection({ section, products, locale = 'ar' }: FeaturedSe
   )
 }
 
-function ProductCard({ product, locale }: { product: Product; locale: string }) {
+function ProductCard({ product, locale }: { product: ProductWithOptions; locale: string }) {
   const hasDiscount =
     product.compare_price && product.compare_price > product.base_price
 
+  // WHAT: أول مجموعة مقاسات/أوزان للمنتج (لو الأدمن ضاف واحدة) — بتتعرض
+  //       كتاجات صغيرة تحت الاسم عشان العميل يشوف الخيارات المتاحة بسرعة
+  const sizeGroup = product.customization_groups?.[0]
+  const brandName = product.brand
+    ? t(product.brand, locale, product.brand.name_ar)
+    : ''
+
   return (
-    <div className="group block bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg dark:hover:shadow-black/30 transition-all duration-300">
-      <div className="relative h-24 sm:h-28 bg-gray-50 dark:bg-gray-800">
+    <div className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg dark:hover:shadow-black/30 transition-all duration-300">
+      <div className="relative aspect-square bg-gray-50 dark:bg-gray-800">
         <Link href={`/product/${product.id}`} className="absolute inset-0">
           {product.main_image_url ? (
             <Image
@@ -291,22 +324,55 @@ function ProductCard({ product, locale }: { product: Product; locale: string }) 
         )}
         <FavoriteButton productId={product.id} />
       </div>
-      <div className="p-2.5">
+      <div className="p-2">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-bold text-[12px] mb-1.5 leading-tight line-clamp-2 group-hover:text-green-700 transition">
+          <h3 className="font-bold text-[11px] mb-1 leading-tight line-clamp-2 min-h-[2.4em] group-hover:text-green-700 transition">
             {t(product, locale, product.name_ar || '')}
           </h3>
         </Link>
-        <div className="flex items-center gap-1.5">
-          <span className="text-red-600 font-extrabold text-[13px]">
+
+        {!!sizeGroup?.options.length && (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {sizeGroup.options.slice(0, 3).map((opt) => (
+              <span
+                key={opt.id}
+                className="text-[8.5px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+              >
+                {t(opt, locale, opt.name_ar)}
+              </span>
+            ))}
+            {sizeGroup.options.length > 3 && (
+              <span className="text-[8.5px] text-gray-400">+{sizeGroup.options.length - 3}</span>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className="text-red-600 font-extrabold text-[12px]">
             {product.base_price.toLocaleString(locale === 'en' ? 'en-US' : 'ar-EG')}
           </span>
           {hasDiscount && (
-            <span className="text-gray-400 line-through text-[10px]">
+            <span className="text-gray-400 line-through text-[9.5px]">
               {product.compare_price!.toLocaleString(locale === 'en' ? 'en-US' : 'ar-EG')}
             </span>
           )}
         </div>
+
+        <AddToCartButton
+          product={{
+            id: product.id,
+            name: product.name_en || product.name_ar,
+            name_ar: product.name_ar,
+            name_en: product.name_en || null,
+            price: product.base_price,
+            image_url: product.main_image_url,
+            brand_id: product.brand_id,
+            brand_name: brandName,
+            brand_name_ar: product.brand?.name_ar || null,
+            brand_name_en: product.brand?.name_en || null,
+          }}
+          customizationGroups={product.customization_groups}
+        />
       </div>
     </div>
   )
