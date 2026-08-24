@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { sendPushToCustomer } from '@/lib/push'
 
 const updateStatusSchema = z.object({
   status: z.enum([
@@ -204,6 +205,30 @@ export async function PATCH(
     if (error) {
       console.error('[Order PATCH] Error:', error)
       return Response.json({ error: 'Failed to update order' }, { status: 500 })
+    }
+
+    // WHAT: نبعت إشعار Push للعميل بحالة طلبه الجديدة — من غير ما
+    //       نستنى الإرسال يخلص (fire-and-forget) عشان لو Push فشل
+    //       لأي سبب، ده مبيوقفش الأدمن من تحديث حالة الطلب
+    if (updatedOrder.customer_uid) {
+      const statusMessages: Record<string, { title: string; body: string }> = {
+        accepted: { title: '✅ طلبك اتقبل', body: 'المطعم بدأ يجهزلك طلبك دلوقتي' },
+        preparing: { title: '👨‍🍳 بيتحضرلك', body: 'طلبك بيتحضر في المطبخ دلوقتي' },
+        ready: { title: '📦 طلبك جاهز', body: 'طلبك جاهز وهيتوصلك قريب' },
+        out_for_delivery: { title: '🛵 في الطريق إليك', body: 'المندوب في الطريق يوصلك طلبك' },
+        delivered: { title: '🎉 وصل الطلب', body: 'بالهنا والشفا! نتمنى نشوفك تاني قريب' },
+        cancelled: { title: '❌ الطلب اتلغى', body: 'طلبك اتلغى — كلمنا لو محتاج تفاصيل' },
+      }
+      const msg = statusMessages[status]
+      if (msg) {
+        sendPushToCustomer(updatedOrder.customer_uid, {
+          title: msg.title,
+          body: msg.body,
+          url: '/track-order',
+        }).catch((pushErr) => {
+          console.error('[Order PATCH] Push notification failed (non-blocking):', pushErr)
+        })
+      }
     }
 
     return Response.json({ data: updatedOrder }, { status: 200 })

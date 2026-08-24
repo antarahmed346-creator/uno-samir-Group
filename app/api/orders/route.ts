@@ -23,6 +23,7 @@ const orderItemSchema = z.object({
 
 const createOrderSchema = z.object({
   brand_id: z.string().uuid(),
+  customer_uid: z.string().uuid().nullable().optional(),
   customer_name: z.string().min(2).max(100),
   customer_phone: z.string().min(8).max(20),
   customer_address: z.string().optional(),
@@ -154,13 +155,19 @@ export async function POST(request: NextRequest) {
     // WHY:  الموقع بقى منشور فعلياً على الإنترنت — لازم نمنع
     //       سبام الطلبات الوهمية اللي ممكن تغرق لوحة تحكم المطعم
     // KILL: من غيره أي حد يقدر يبعت آلاف الطلبات الوهمية بضغطة سكريبت
-    const identifier = getClientIdentifier(request)
-    const rl = await checkRateLimit(rateLimiters.orderCreation, identifier)
-    if (!rl.allowed) {
-      return Response.json(
-        { error: 'محاولات كتير أوي، حاول تاني بعد شوية' },
-        { status: 429 }
-      )
+    // NOTE: لو Redis نفسه فشل (مشكلة شبكة/إعدادات)، منمنعش عميل حقيقي
+    //       من إتمام طلبه بسبب مشكلة في خدمة خارجية — بنسجل الخطأ ونكمل
+    try {
+      const identifier = getClientIdentifier(request)
+      const rl = await checkRateLimit(rateLimiters.orderCreation, identifier)
+      if (!rl.allowed) {
+        return Response.json(
+          { error: 'محاولات كتير أوي، حاول تاني بعد شوية' },
+          { status: 429 }
+        )
+      }
+    } catch (rateLimitErr) {
+      console.error('[Orders POST] Rate limit check failed, allowing order through:', rateLimitErr)
     }
 
     const body = await request.json()
@@ -225,6 +232,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .insert({
         brand_id: data.brand_id,
+        customer_uid: data.customer_uid || null,
         customer_name: data.customer_name,
         customer_phone: data.customer_phone,
         customer_address: data.customer_address,

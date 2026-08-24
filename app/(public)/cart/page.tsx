@@ -254,7 +254,7 @@ export default function CartPage() {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-0 left-0 right-0 bg-[#111111]/95 backdrop-blur-xl border-t border-white/10 p-4 sm:p-6 z-50"
+        className="fixed bottom-0 left-0 right-0 bg-[#111111]/95 backdrop-blur-xl border-t border-white/10 p-4 sm:p-6 z-[60]"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <div className="max-w-3xl mx-auto">

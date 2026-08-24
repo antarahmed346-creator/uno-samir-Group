@@ -7,6 +7,8 @@ import { ChevronLeft, ShoppingBag, User, Phone, MapPin, Clock, CalendarDays, Cre
 import { useCartStore } from '@/lib/store/cart'
 import { useCouponStore, calculateDiscount } from '@/lib/store/coupon'
 import { toast } from 'sonner'
+import { createBrowserClient } from '@/lib/supabase/client'
+import { ensureCustomerUid } from '@/lib/customer-identity'
 
 // ─── Helper: read locale from cookie ───────────────────────────────────────
 function useLocale() {
@@ -173,11 +175,24 @@ export default function CheckoutPage() {
         scheduledDeliveryTime = dt.toISOString()
       }
 
+      // WHAT: نربط الطلب بهوية العميل (anonymous أو مسجل بجوجل) عشان
+      //       نقدر نبعتله إشعار Push لما حالة طلبه تتغير
+      // WHY:  من غيرها، مفيش طريقة نعرف نبعت الإشعار لمين بعد كده
+      // NOTE: لو فشلت لأي سبب (مثلاً مشكلة شبكة)، الطلب نفسه لازم يكمل
+      //       عادي — الإشعارات ميزة إضافية مش شرط لإتمام الطلب
+      let customerUid: string | null = null
+      try {
+        customerUid = await ensureCustomerUid(createBrowserClient())
+      } catch (identityErr) {
+        console.error('Customer identity failed (non-blocking):', identityErr)
+      }
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           brand_id: brandId,
+          customer_uid: customerUid,
           customer_name: formData.name,
           customer_phone: formData.phone,
           customer_address: formData.address,
@@ -202,9 +217,20 @@ export default function CheckoutPage() {
       })
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        console.error('Order error:', errorData)
-        toast.error(isRTL ? 'فشل إنشاء الطلب' : 'Failed to create order')
+        // WHAT: لو الرد مش JSON صالح، نطبع النص الخام بدل ما نبلع الخطأ في {}
+        // WHY:  {} فاضي مبيقولش حاجة — النص الخام بيوريك السبب الحقيقي
+        const rawText = await res.text()
+        let errorData: { error?: string; details?: unknown } = {}
+        try {
+          errorData = JSON.parse(rawText)
+        } catch {
+          console.error('Order error — non-JSON response:', res.status, rawText.slice(0, 500))
+        }
+        console.error('Order error:', res.status, errorData)
+        toast.error(
+          errorData.error ||
+            (isRTL ? 'فشل إنشاء الطلب — حاول تاني' : 'Failed to create order — try again')
+        )
         setLoading(false)
         return
       }

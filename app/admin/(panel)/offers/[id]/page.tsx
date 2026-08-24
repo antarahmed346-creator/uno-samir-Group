@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { useOffer, useUpdateOffer } from '@/lib/hooks/useOffers'
 import { useBrands } from '@/lib/hooks/useCategories'
+import { ImageUpload } from '@/components/admin/ImageUpload'
 
 const offerTypes = [
   { value: 'percentage', label: 'نسبة مئوية (%)' },
@@ -48,6 +49,7 @@ export default function EditOfferPage() {
     starts_at: '',
     expires_at: '',
     status: 'draft' as 'active' | 'inactive' | 'draft',
+    image_url: null as string | null,
   })
 
   useEffect(() => {
@@ -67,12 +69,17 @@ export default function EditOfferPage() {
         starts_at: offer.starts_at ? new Date(offer.starts_at).toISOString().slice(0, 16) : '',
         expires_at: offer.expires_at ? new Date(offer.expires_at).toISOString().slice(0, 16) : '',
         status: offer.status,
+        image_url: offer.image_url || null,
       })
     }
   }, [offer])
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleImageChange = (url: string | null) => {
+    setForm((prev) => ({ ...prev, image_url: url }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,6 +102,7 @@ export default function EditOfferPage() {
         starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
         expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
         status: form.status,
+        image_url: form.image_url,
       },
     })
 
@@ -134,6 +142,15 @@ export default function EditOfferPage() {
             <CardTitle className="text-lg">معلومات أساسية</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>صورة العرض</Label>
+              <ImageUpload
+                value={form.image_url}
+                onChange={handleImageChange}
+                disabled={updateOffer.isPending}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="title_ar">العنوان (عربي) *</Label>

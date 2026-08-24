@@ -198,7 +198,7 @@ export function BrandsSection({ section, brands, locale = 'ar' }: BrandsSectionP
           {filteredBrands?.map((brand) => (
             <Link
               key={brand.id}
-              href={`/${brand.slug}`}
+              href={`/${brand.slug}/menu`}
               className="group flex items-center gap-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 transition-colors"
             >
               <div

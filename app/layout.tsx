@@ -31,6 +31,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${cairo.variable} font-cairo ${theme === 'dark' ? 'dark' : ''}`}
     >
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#dc2626" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="preconnect" href="https://ssigaaiieshxrktelrwq.supabase.co" />

@@ -20,7 +20,7 @@ export default function CategoryChips({ brands, locale = 'ar' }: { brands: Brand
       {brands.map((brand, i) => (
         <Link
           key={brand.id}
-          href={`/${brand.slug}`}
+          href={`/${brand.slug}/menu`}
           className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11.5px] font-bold transition-colors ${
             i === 0 ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}

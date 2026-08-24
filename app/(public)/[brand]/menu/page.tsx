@@ -9,6 +9,7 @@ import {
 } from '@/lib/seo'
 import { BRAND_NAMES } from '@/lib/types'
 import RealtimeProvider from '@/components/public/RealtimeProvider'
+import BrandLocationButton from '@/components/public/BrandLocationButton'
 
 interface Props {
   params: Promise<{ brand: string }>
@@ -62,6 +63,12 @@ export default async function MenuPage({ params, searchParams }: Props) {
     .eq('status', 'active')
     .order('sort_order')
 
+  const { data: locations } = await supabase
+    .from('brand_locations')
+    .select('id, label_ar, label_en, address, google_maps_url')
+    .eq('brand_id', brand.id)
+    .order('sort_order')
+
   let query = supabase
     .from('products')
     .select('*, category:categories(*)')
@@ -100,6 +107,26 @@ export default async function MenuPage({ params, searchParams }: Props) {
     options: CustomizationOption[]
   }
 
+  // WHAT: شكل الصف الخام زي ما بيرجع من الاستعلام مباشرة (قبل ما نحوّله
+  //       لـ CustomizationGroup/Option فوق) — لازم نوضحه صراحة عشان
+  //       TypeScript يعرف نوع الباراميتر جوا .map() المتداخل تحت
+  interface RawCustomizationOption {
+    id: string
+    name_ar: string
+    name_en: string | null
+    price_modifier: number | null
+  }
+  interface RawCustomizationGroupRow {
+    id: string
+    name_ar: string
+    name_en: string | null
+    is_required: boolean
+    min_selections: number | null
+    max_selections: number | null
+    product_id: string
+    customization_options: RawCustomizationOption[] | null
+  }
+
   let customizationGroups: CustomizationGroup[] = []
   if (productIds.length > 0) {
     // WHAT: أسماء الأعمدة هنا لازم تطابق قاعدة البيانات الحقيقية بالظبط —
@@ -118,7 +145,7 @@ export default async function MenuPage({ params, searchParams }: Props) {
       console.error('[MenuPage] customization_groups fetch failed:', groupsError.message)
     }
 
-    customizationGroups = (groups || []).map((g) => ({
+    customizationGroups = (groups || []).map((g: RawCustomizationGroupRow) => ({
       id: g.id,
       name: t(g.name_ar, g.name_en, g.name_ar),
       name_ar: g.name_ar,
@@ -126,7 +153,7 @@ export default async function MenuPage({ params, searchParams }: Props) {
       min_select: g.is_required ? Math.max(1, g.min_selections || 1) : (g.min_selections || 0),
       max_select: g.max_selections ?? 1,
       product_id: g.product_id,
-      options: (g.customization_options || []).map((o) => ({
+      options: (g.customization_options || []).map((o: RawCustomizationOption) => ({
         id: o.id,
         name: t(o.name_ar, o.name_en, o.name_ar),
         name_ar: o.name_ar,
@@ -168,6 +195,7 @@ export default async function MenuPage({ params, searchParams }: Props) {
           <section className={`py-12 rounded-2xl bg-gradient-to-br ${colors[brand.slug] || 'from-gray-600 to-gray-800'} text-white text-center`}>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">{t(brand.name_ar, brand.name_en, brand.name_ar)}</h1>
             <p className="text-lg opacity-90">{isRTL ? 'القائمة الكاملة' : 'Full Menu'}</p>
+            <BrandLocationButton locations={locations || []} locale={locale} />
           </section>
 
           <section className="flex gap-3 flex-wrap justify-center">
@@ -182,37 +210,41 @@ export default async function MenuPage({ params, searchParams }: Props) {
           </section>
 
           <section>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {productsWithGroups.map(product => (
-                <div key={product.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
-                  <div className="h-56 bg-gray-200 relative overflow-hidden">
+                <div key={product.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 group">
+                  <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {product.main_image_url ? (
                       <Image src={product.main_image_url} alt={t(product.name_ar, product.name_en, product.name_ar)} fill className="object-cover group-hover:scale-105 transition duration-500" />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-5xl">🍽️</div>
+                      <div className="flex items-center justify-center h-full text-3xl">🍽️</div>
                     )}
                     {product.is_featured && (
-                      <div className="absolute top-4 right-4 bg-amber-400 text-amber-900 px-3 py-1 rounded-full text-sm font-bold">{isRTL ? '⭐ مميز' : '⭐ Featured'}</div>
+                      <div className="absolute top-1.5 right-1.5 bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full text-[9px] font-bold">⭐</div>
                     )}
                     {product.compare_price && (
-                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">{isRTL ? 'خصم' : 'Discount'}</div>
+                      <div className="absolute top-1.5 left-1.5 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-bold">{isRTL ? 'خصم' : 'Sale'}</div>
                     )}
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-bold text-lg mb-1">{t(product.name_ar, product.name_en, product.name_ar)}</h3>
-                    <p className="text-gray-500 text-sm mb-2">{locale === 'en' ? (product.name_en || product.name_ar) : product.name_ar}</p>
-                    {product.description_ar && (
-                      <p className="text-gray-400 text-sm line-clamp-2 mb-3">{product.description_ar}</p>
-                    )}
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <span className="text-2xl font-bold text-green-600">{product.base_price} {isRTL ? 'ج.م' : 'EGP'}</span>
-                        {product.compare_price && (
-                          <span className="text-sm text-gray-400 line-through mr-2">{product.compare_price} {isRTL ? 'ج.م' : 'EGP'}</span>
-                        )}
+                  <div className="p-2">
+                    <h3 className="font-bold text-[11px] mb-1 leading-tight line-clamp-2 min-h-[2.4em]">
+                      {t(product.name_ar, product.name_en, product.name_ar)}
+                    </h3>
+
+                    {!!product.customization_groups?.[0]?.options.length && (
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {product.customization_groups[0].options.slice(0, 3).map((opt: CustomizationOption) => (
+                          <span key={opt.id} className="text-[8.5px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                            {opt.name}
+                          </span>
+                        ))}
                       </div>
-                      {product.category?.name_ar && (
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{t(product.category.name_ar, product.category.name_en, product.category.name_ar)}</span>
+                    )}
+
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-red-600 font-extrabold text-[12px]">{product.base_price} {isRTL ? 'ج.م' : 'EGP'}</span>
+                      {product.compare_price && (
+                        <span className="text-[9.5px] text-gray-400 line-through">{product.compare_price}</span>
                       )}
                     </div>
 
