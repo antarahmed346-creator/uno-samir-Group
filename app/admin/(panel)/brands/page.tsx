@@ -17,7 +17,7 @@ interface Brand {
   name_en: string
   slug: string
   logo_url: string | null
-  cover_image_url: string | null
+  cover_url: string | null
   description_ar: string | null
   description_en: string | null
   primary_color: string
@@ -42,7 +42,7 @@ export default function SettingsPage() {
     name_en: '',
     slug: '',
     logo_url: '',
-    cover_image_url: '',
+    cover_url: '',
     description_ar: '',
     description_en: '',
     primary_color: '#FF6B00',
@@ -81,7 +81,7 @@ export default function SettingsPage() {
       name_en: '',
       slug: '',
       logo_url: '',
-      cover_image_url: '',
+      cover_url: '',
       description_ar: '',
       description_en: '',
       primary_color: '#FF6B00',
@@ -119,7 +119,7 @@ export default function SettingsPage() {
         ...formData,
         slug,
         logo_url: formData.logo_url || null,
-        cover_image_url: formData.cover_image_url || null,
+        cover_url: formData.cover_url || null,
         description_ar: formData.description_ar || null,
         description_en: formData.description_en || null,
       }
@@ -321,8 +321,8 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">صورة الغلاف (Cover)</label>
             <ImageUpload
-              value={formData.cover_image_url || null}
-              onChange={(url) => setFormData({ ...formData, cover_image_url: url || '' })}
+              value={formData.cover_url || null}
+              onChange={(url) => setFormData({ ...formData, cover_url: url || '' })}
             />
           </div>
 

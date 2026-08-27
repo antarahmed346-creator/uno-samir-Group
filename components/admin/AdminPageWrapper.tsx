@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react'
 import AdminSidebar from './AdminSidebar'
 import { createBrowserClient } from '@/lib/supabase/client'
-import { AdminRole } from '@/lib/types'  // ← ضف الـ import
+import { AdminRole, AdminPermissions } from '@/lib/types'
 
 interface AdminPageWrapperProps {
   children: React.ReactNode
 }
 
 export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
-  const [userData, setUserData] = useState<{ role: AdminRole; name: string } | null>(null)  // ← غير string لـ AdminRole
+  const [userData, setUserData] = useState<{ role: AdminRole; name: string; permissions: AdminPermissions | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createBrowserClient()
 
@@ -20,20 +20,21 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
       if (user) {
         const { data } = await supabase
           .from('admin_users')
-          .select('role, full_name')  // ← غير name لـ full_name
+          .select('role, full_name, permissions')
           .eq('id', user.id)
           .single()
-        
+
         // WHAT: Validates the role is a valid AdminRole before setting state
         // WHY:  TypeScript strict mode requires exact type matching
         // KILL: Remove this and TypeScript will reject invalid roles
         const validRole: AdminRole = ['super_admin', 'brand_manager', 'content_editor'].includes(data?.role)
           ? data?.role
           : 'content_editor'
-        
+
         setUserData({
           role: validRole,
-          name: data?.full_name || user.email || 'Admin'
+          name: data?.full_name || user.email || 'Admin',
+          permissions: data?.permissions ?? null,
         })
       }
       setLoading(false)
@@ -58,7 +59,7 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
   }
 
   return (
-    <AdminSidebar userRole={userData.role} userName={userData.name}>
+    <AdminSidebar userRole={userData.role} userName={userData.name} userPermissions={userData.permissions}>
       {children}
     </AdminSidebar>
   )

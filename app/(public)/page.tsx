@@ -5,7 +5,6 @@ import {
   HeroSection,
   BrandsSection,
   FeaturedSection,
-  OffersSection,
   TestimonialsSection,
   CustomSection,
 } from '@/components/homepage/sections'
@@ -148,7 +147,7 @@ export default async function Homepage() {
             {(sections as HomepageSection[] | null)?.map((section) => {
               switch (section.type) {
                 case 'hero':
-                  return <HeroSection key={section.id} section={section} brands={brands} locale={locale} />
+                  return <HeroSection key={section.id} section={section} brands={brands} offers={activeOffers} locale={locale} />
                 case 'brands':
                   return (
                     <div key={section.id}>
@@ -166,7 +165,10 @@ export default async function Homepage() {
                     />
                   )
                 case 'offers':
-                  return <OffersSection key={section.id} section={section} offers={activeOffers} locale={locale} />
+                  // WHAT: العروض بقت بتظهر في البانر العلوي بدل القايمة هنا
+                  // WHY:  طلب العميل تحديداً — العروض تتحرك لوحدها فوق
+                  //       جنب "عرض اليوم"، مش قايمة ساكنة تحت الصفحة
+                  return null
                 case 'testimonials':
                   return <TestimonialsSection key={section.id} section={section} locale={locale} />
                 case 'custom':

@@ -156,6 +156,25 @@ export interface HomepageSection {
   brand?: Brand
 }
 
+// WHAT: كل قسم في لوحة التحكم ممكن يتفعّل/يتقفل لوحده لمستخدم غير
+//       super_admin — dashboard دايماً متاح، users محجوز على
+//       super_admin بس ومش من ضمن الصلاحيات القابلة للمنح
+export type AdminPermissionKey =
+  | 'orders'
+  | 'products'
+  | 'categories'
+  | 'brands'
+  | 'offers'
+  | 'reservations'
+  | 'reports'
+  | 'chat'
+  | 'media'
+  | 'homepage'
+  | 'menu_builder'
+  | 'settings'
+
+export type AdminPermissions = Partial<Record<AdminPermissionKey, boolean>>
+
 export interface AdminUser {
   id: string
   email: string
@@ -163,6 +182,7 @@ export interface AdminUser {
   avatar_url: string | null
   role: AdminRole
   brand_access: string[] | null
+  permissions: AdminPermissions | null
   is_active: boolean
   last_login: string | null
   created_at: string

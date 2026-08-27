@@ -11,37 +11,41 @@ import {
 } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase/client'
 import ThemeToggle from '@/components/public/ThemeToggle'
-import { AdminRole } from '@/lib/types'
+import { AdminRole, AdminPermissionKey, AdminPermissions } from '@/lib/types'
 import { toast } from 'sonner'
 
 interface NavItem {
   href: string
   label: string
   icon: React.ElementType
-  roles: AdminRole[]
+  // WHAT: undefined = متاح لأي أدمن نشط دايماً (زي الرئيسية).
+  //       'super_admin_only' = super_admin بس، مش صلاحية قابلة للمنح
+  //       (زي المستخدمين — إدارة الأدمنز نفسها حساسة جداً عشان تتفوض)
+  permissionKey?: AdminPermissionKey | 'super_admin_only'
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { href: '/admin/dashboard',    label: 'الرئيسية',         icon: LayoutDashboard, roles: ['super_admin', 'brand_manager', 'content_editor'] },
-  { href: '/admin/orders',       label: 'الطلبات',           icon: Package,         roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/products',     label: 'المنتجات',          icon: ShoppingBag,     roles: ['super_admin', 'brand_manager', 'content_editor'] },
-  { href: '/admin/categories',   label: 'الفئات',            icon: Layers,          roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/brands',       label: 'البراندات',         icon: Store,           roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/offers',       label: 'العروض',            icon: Tag,             roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/reservations', label: 'الحجوزات',          icon: CalendarCheck,   roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/reports',      label: 'التقارير',          icon: FileBarChart,    roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/chat',         label: 'الشات',             icon: MessageCircle,   roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/media',        label: 'الصور',             icon: ImageIcon,       roles: ['super_admin', 'brand_manager', 'content_editor'] },
-  { href: '/admin/homepage',     label: 'الصفحة الرئيسية',  icon: Home,            roles: ['super_admin', 'brand_manager', 'content_editor'] },
-  { href: '/admin/menu-builder', label: 'ترتيب القائمة',    icon: GripVertical,    roles: ['super_admin', 'brand_manager'] },
-  { href: '/admin/users',        label: 'المستخدمين',        icon: Users,           roles: ['super_admin'] },
-  { href: '/admin/settings',     label: 'الإعدادات',         icon: Settings,        roles: ['super_admin', 'brand_manager', 'content_editor'] },
+  { href: '/admin/dashboard',    label: 'الرئيسية',         icon: LayoutDashboard },
+  { href: '/admin/orders',       label: 'الطلبات',           icon: Package,         permissionKey: 'orders' },
+  { href: '/admin/products',     label: 'المنتجات',          icon: ShoppingBag,     permissionKey: 'products' },
+  { href: '/admin/categories',   label: 'الفئات',            icon: Layers,          permissionKey: 'categories' },
+  { href: '/admin/brands',       label: 'البراندات',         icon: Store,           permissionKey: 'brands' },
+  { href: '/admin/offers',       label: 'العروض',            icon: Tag,             permissionKey: 'offers' },
+  { href: '/admin/reservations', label: 'الحجوزات',          icon: CalendarCheck,   permissionKey: 'reservations' },
+  { href: '/admin/reports',      label: 'التقارير',          icon: FileBarChart,    permissionKey: 'reports' },
+  { href: '/admin/chat',         label: 'الشات',             icon: MessageCircle,   permissionKey: 'chat' },
+  { href: '/admin/media',        label: 'الصور',             icon: ImageIcon,       permissionKey: 'media' },
+  { href: '/admin/homepage',     label: 'الصفحة الرئيسية',  icon: Home,            permissionKey: 'homepage' },
+  { href: '/admin/menu-builder', label: 'ترتيب القائمة',    icon: GripVertical,    permissionKey: 'menu_builder' },
+  { href: '/admin/users',        label: 'المستخدمين',        icon: Users,           permissionKey: 'super_admin_only' },
+  { href: '/admin/settings',     label: 'الإعدادات',         icon: Settings,        permissionKey: 'settings' },
 ]
 
 export interface AdminSidebarProps {
   userRole: AdminRole
   userName: string
   userBrandId?: string[] | null
+  userPermissions?: AdminPermissions | null
   children: React.ReactNode
 }
 
@@ -232,7 +236,7 @@ function OrderBell({ count, onReset }: { count: number; onReset: () => void }) {
   )
 }
 
-export default function AdminSidebar({ userRole, userName, userBrandId, children }: AdminSidebarProps) {
+export default function AdminSidebar({ userRole, userName, userBrandId, userPermissions, children }: AdminSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(true)
@@ -242,7 +246,15 @@ export default function AdminSidebar({ userRole, userName, userBrandId, children
   const { count: ordersCount, reset: resetOrders } = useRealtimeOrders(userBrandId)
   const { count: chatCount, reset: resetChat } = useRealtimeChatNotify()
 
-  const visibleNavItems = ALL_NAV_ITEMS.filter((item) => item.roles.includes(userRole))
+  // WHAT: super_admin بيشوف كل حاجة دايماً. أي حد تاني: البنود من غير
+  //       permissionKey (زي الرئيسية) بتظهر دايماً، super_admin_only
+  //       (المستخدمين) بتتقفل خالص، والباقي على حسب صلاحياته المحفوظة
+  const visibleNavItems = ALL_NAV_ITEMS.filter((item) => {
+    if (userRole === 'super_admin') return true
+    if (!item.permissionKey) return true
+    if (item.permissionKey === 'super_admin_only') return false
+    return userPermissions?.[item.permissionKey] === true
+  })
 
   useEffect(() => { setMounted(true) }, [])
 

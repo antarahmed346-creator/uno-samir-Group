@@ -56,27 +56,34 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { email, password, full_name, role, brand_access } = body
+    const { email, password, full_name, permissions, brand_access } = body
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    // WHAT: منع إنشاء super_admin تاني من نفس الفورم
-    // WHY:  الأونر (super_admin) لازم يتعمله يدوي بس من Supabase مباشرة —
-    //       مش عن طريق فورم ممكن يتضغط بالغلط أو يتساء استخدامه
-    if (role === 'super_admin') {
+    if (!brand_access || brand_access.length === 0) {
       return NextResponse.json(
-        { error: 'لا يمكن إنشاء حساب Super Admin من هذه الشاشة' },
+        { error: 'لازم تحدد براند واحد على الأقل' },
         { status: 400 }
       )
     }
 
-    if ((role === 'brand_manager' || role === 'content_editor') && (!brand_access || brand_access.length === 0)) {
-      return NextResponse.json(
-        { error: 'لازم تحدد براند واحد على الأقل لهذا الدور' },
-        { status: 400 }
-      )
+    // WHAT: بنبني كائن صلاحيات نضيف منه بس القيم اللي true وموجودة
+    //       فعلاً ضمن القائمة المعروفة — أي مفتاح غريب أو قيمة مش
+    //       boolean بيتجاهل تلقائياً
+    // WHY:  الطلب جايلنا من المتصفح، مينفعش نثق فيه من غير فلترة —
+    //       من غيرها حد ممكن يبعت أي JSON غريب يتخزن كما هو
+    const KNOWN_PERMISSIONS = [
+      'orders', 'products', 'categories', 'brands', 'offers',
+      'reservations', 'reports', 'chat', 'media', 'homepage',
+      'menu_builder', 'settings',
+    ]
+    const safePermissions: Record<string, boolean> = {}
+    if (permissions && typeof permissions === 'object') {
+      for (const k of KNOWN_PERMISSIONS) {
+        if (permissions[k] === true) safePermissions[k] = true
+      }
     }
 
     const supabase = createAdminClient()
@@ -97,8 +104,15 @@ export async function POST(request: Request) {
         id: authData.user.id,
         email,
         full_name: full_name || email.split('@')[0],
-        role: role || 'content_editor',
+        // WHAT: role بيتحط قيمة ثابتة دايماً هنا، بغض النظر عن أي
+        //       حاجة بعتها المتصفح — الوصول الفعلي بقى محدد بالكامل
+        //       عن طريق permissions، مش role
+        // WHY:  دفاع إضافي (defense in depth): حتى لو حد قدر يعدّل
+        //       الطلب المرسل بأي شكل، مستحيل يعمل نفسه super_admin
+        //       من هنا — الحقل مقفول على قيمة واحدة بس دايماً
+        role: 'content_editor',
         brand_access: brand_access || [],
+        permissions: safePermissions,
         is_active: true,
         avatar_url: null,
         last_login: null,

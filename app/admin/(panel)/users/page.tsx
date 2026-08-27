@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Users, Plus, RefreshCw, Trash2, UserCheck, UserX, Crown, KeyRound, Building2, Check } from 'lucide-react'
+import { Users, Plus, RefreshCw, Trash2, UserCheck, UserX, Crown, KeyRound, Building2, Check, Package, ShoppingBag, Layers, Store, Tag, CalendarCheck, FileBarChart, MessageCircle, ImageIcon, Home, GripVertical, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,22 +15,29 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useUsers, useDeleteUser, useToggleUserStatus } from '@/lib/hooks/useUsers'
 import { useBrands } from '@/lib/hooks/useCategories'
+import { AdminPermissionKey } from '@/lib/types'
 import { toast } from 'sonner'
 
-const roleLabels: Record<string, { label: string; color: string }> = {
-  super_admin: { label: 'Super Admin', color: 'bg-red-100 text-red-700 border-red-200' },
-  brand_manager: { label: 'Brand Manager', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  content_editor: { label: 'Content Editor', color: 'bg-green-100 text-green-700 border-green-200' },
-}
+// WHAT: كل قسم إداري ممكن يتفعّل لوحده — السوبر أدمن يحدد بالظبط
+//       المستخدم الجديد يوصل لإيه، من غير ما يتحدد بدور جاهز مسبقاً
+// WHY:  ده بالظبط اللي طلبه العميل — حرية كاملة لكل قسم بدل 3 أدوار
+//       ثابتة بصلاحيات مجمّعة معاها
+const PERMISSION_MODULES: { key: AdminPermissionKey; label: string; icon: React.ElementType }[] = [
+  { key: 'orders', label: 'الطلبات', icon: Package },
+  { key: 'products', label: 'المنتجات', icon: ShoppingBag },
+  { key: 'categories', label: 'الفئات', icon: Layers },
+  { key: 'brands', label: 'البراندات', icon: Store },
+  { key: 'offers', label: 'العروض', icon: Tag },
+  { key: 'reservations', label: 'الحجوزات', icon: CalendarCheck },
+  { key: 'reports', label: 'التقارير', icon: FileBarChart },
+  { key: 'chat', label: 'الشات', icon: MessageCircle },
+  { key: 'media', label: 'الصور', icon: ImageIcon },
+  { key: 'homepage', label: 'الصفحة الرئيسية', icon: Home },
+  { key: 'menu_builder', label: 'ترتيب القائمة', icon: GripVertical },
+  { key: 'settings', label: 'الإعدادات', icon: Settings },
+]
 
 export default function UsersPage() {
   const { data: users, isLoading, error, refetch } = useUsers()
@@ -45,7 +52,7 @@ export default function UsersPage() {
     password: '',
     confirmPassword: '',
     full_name: '',
-    role: 'content_editor' as 'super_admin' | 'brand_manager' | 'content_editor',
+    permissions: {} as Record<AdminPermissionKey, boolean>,
     brand_access: [] as string[],
   })
 
@@ -70,8 +77,12 @@ export default function UsersPage() {
       toast.error('❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل')
       return
     }
-    if (newUser.role === 'brand_manager' && newUser.brand_access.length === 0) {
-      toast.error('❌ يجب اختيار براند واحد على الأقل لمدير البراند')
+    if (newUser.brand_access.length === 0) {
+      toast.error('❌ يجب اختيار براند واحد على الأقل')
+      return
+    }
+    if (!Object.values(newUser.permissions).some(Boolean)) {
+      toast.error('❌ يجب تفعيل صلاحية قسم واحد على الأقل')
       return
     }
 
@@ -85,8 +96,8 @@ export default function UsersPage() {
           email: newUser.email,
           password: newUser.password,
           full_name: newUser.full_name,
-          role: newUser.role,
-          brand_access: newUser.role === 'super_admin' ? [] : newUser.brand_access,
+          permissions: newUser.permissions,
+          brand_access: newUser.brand_access,
         }),
       })
 
@@ -105,7 +116,7 @@ export default function UsersPage() {
         password: '',
         confirmPassword: '',
         full_name: '',
-        role: 'content_editor',
+        permissions: {} as Record<AdminPermissionKey, boolean>,
         brand_access: [],
       })
       refetch()
@@ -115,6 +126,13 @@ export default function UsersPage() {
     } finally {
       setIsCreating(false)
     }
+  }
+
+  const togglePermission = (key: AdminPermissionKey) => {
+    setNewUser((prev) => ({
+      ...prev,
+      permissions: { ...prev.permissions, [key]: !prev.permissions[key] },
+    }))
   }
 
   const toggleBrandAccess = (brandId: string) => {
@@ -219,64 +237,68 @@ export default function UsersPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">الدور</Label>
-                <Select
-                  value={newUser.role}
-                  onValueChange={(v) => setNewUser({ ...newUser, role: v as 'super_admin' | 'brand_manager' | 'content_editor', brand_access: [] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="content_editor">📝 Content Editor</SelectItem>
-                    <SelectItem value="brand_manager">🏢 Brand Manager</SelectItem>
-                    <SelectItem value="super_admin">👑 Super Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {newUser.role === 'super_admin' && 'يمكنه الوصول لكل البراندات والمستخدمين'}
-                  {newUser.role === 'brand_manager' && 'يمكنه إدارة براند واحد أو أكثر'}
-                  {newUser.role === 'content_editor' && 'يمكنه إدارة المنتجات والفئات فقط'}
-                </p>
-              </div>
-
-              {/* Brand Access - Only for Brand Manager */}
-              {newUser.role === 'brand_manager' && (
-                <div className="space-y-3 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-blue-600" />
-                    <Label className="font-semibold">البراندات المسموح بها *</Label>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {brands?.map((brand) => (
+                <Label>الصلاحيات — حدد الأقسام اللي المستخدم ده يقدر يوصلها</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PERMISSION_MODULES.map(({ key, label, icon: Icon }) => {
+                    const active = !!newUser.permissions[key]
+                    return (
                       <button
-                        key={brand.id}
+                        key={key}
                         type="button"
-                        onClick={() => toggleBrandAccess(brand.id)}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-right ${
-                          newUser.brand_access.includes(brand.id)
-                            ? 'bg-blue-50 border-blue-300 text-blue-700'
+                        onClick={() => togglePermission(key)}
+                        className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-all text-right ${
+                          active
+                            ? 'bg-orange-50 border-orange-300 text-orange-700'
                             : 'bg-white border-gray-200 hover:bg-gray-50'
                         }`}
                       >
-                        <span
-                          className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: brand.primary_color ?? '#888' }}
-                        />
-                        <span className="flex-1">{brand.name_ar}</span>
-                        {newUser.brand_access.includes(brand.id) && (
-                          <Check className="h-4 w-4 text-blue-600" />
-                        )}
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="flex-1">{label}</span>
+                        {active && <Check className="h-4 w-4 flex-shrink-0" />}
                       </button>
-                    ))}
-                  </div>
-                  {newUser.brand_access.length > 0 && (
-                    <p className="text-xs text-green-600">
-                      ✅ تم اختيار {newUser.brand_access.length} براند
-                    </p>
-                  )}
+                    )
+                  })}
                 </div>
-              )}
+                <p className="text-xs text-muted-foreground">
+                  «الرئيسية» متاحة دايماً لأي مستخدم نشط. «المستخدمين» محجوزة على Super Admin بس ومش من ضمن الصلاحيات اللي ممكن تتمنح.
+                </p>
+              </div>
+
+              {/* Brand Access */}
+              <div className="space-y-3 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-blue-600" />
+                  <Label className="font-semibold">البراندات المسموح بها *</Label>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {brands?.map((brand) => (
+                    <button
+                      key={brand.id}
+                      type="button"
+                      onClick={() => toggleBrandAccess(brand.id)}
+                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-right ${
+                        newUser.brand_access.includes(brand.id)
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: brand.primary_color ?? '#888' }}
+                      />
+                      <span className="flex-1">{brand.name_ar}</span>
+                      {newUser.brand_access.includes(brand.id) && (
+                        <Check className="h-4 w-4 text-blue-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {newUser.brand_access.length > 0 && (
+                  <p className="text-xs text-green-600">
+                    ✅ تم اختيار {newUser.brand_access.length} براند
+                  </p>
+                )}
+              </div>
 
               <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={isCreating} className="bg-orange-500 hover:bg-orange-600">
@@ -323,9 +345,22 @@ export default function UsersPage() {
                       </div>
                       <p className="text-sm text-muted-foreground">{user.email}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className={`text-xs px-2 py-0.5 rounded border ${roleLabels[user.role]?.color || 'bg-gray-100'}`}>
-                          {roleLabels[user.role]?.label || user.role}
-                        </span>
+                        {user.role === 'super_admin' ? (
+                          <span className="text-xs px-2 py-0.5 rounded border bg-red-100 text-red-700 border-red-200">
+                            👑 Super Admin
+                          </span>
+                        ) : (
+                          PERMISSION_MODULES.filter(({ key }) => user.permissions?.[key]).map(({ key, label }) => (
+                            <span key={key} className="text-xs px-2 py-0.5 rounded border bg-orange-50 text-orange-700 border-orange-200">
+                              {label}
+                            </span>
+                          ))
+                        )}
+                        {user.role !== 'super_admin' && !PERMISSION_MODULES.some(({ key }) => user.permissions?.[key]) && (
+                          <span className="text-xs px-2 py-0.5 rounded border bg-gray-100 text-gray-500 border-gray-200">
+                            مفيش صلاحيات مفعّلة
+                          </span>
+                        )}
                         {user.brand_access && user.brand_access.length > 0 && (
                           <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                             <Building2 className="h-3 w-3 inline ml-1" />

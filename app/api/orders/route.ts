@@ -227,27 +227,44 @@ export async function POST(request: NextRequest) {
 
     const verifiedTotal = Math.max(data.subtotal + data.delivery_fee - verifiedDiscount, 0)
 
-    // Insert order
-    const { data: order, error: orderError } = await serviceClient
+    // WHAT: بنحاول نضيف customer_uid (لربط الطلب بالإشعارات) — لو
+    //       فشلت المحاولة الأولى (مثلاً لأن العمود لسه مش موجود في
+    //       قاعدة البيانات، زي لو الـ SQL الجديد لسه ماتشغلش)، بنعيد
+    //       المحاولة من غيره تاني
+    // WHY:  إتمام الطلب هو الأهم على الإطلاق — ميزة الإشعارات لازم
+    //       متوقفش عميل حقيقي عن إتمام طلبه لو مفيش عمود جديد لسه
+    const orderPayloadBase = {
+      brand_id: data.brand_id,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone,
+      customer_address: data.customer_address,
+      subtotal: data.subtotal,
+      delivery_fee: data.delivery_fee,
+      total: verifiedTotal,
+      coupon_code: matchedOfferId ? data.coupon_code : null,
+      discount_amount: verifiedDiscount,
+      payment_method: data.payment_method,
+      customer_notes: data.customer_notes,
+      scheduled_delivery_time: data.scheduled_delivery_time || null,
+      status: 'pending',
+    }
+
+    let { data: order, error: orderError } = await serviceClient
       .from('orders')
-      .insert({
-        brand_id: data.brand_id,
-        customer_uid: data.customer_uid || null,
-        customer_name: data.customer_name,
-        customer_phone: data.customer_phone,
-        customer_address: data.customer_address,
-        subtotal: data.subtotal,
-        delivery_fee: data.delivery_fee,
-        total: verifiedTotal,
-        coupon_code: matchedOfferId ? data.coupon_code : null,
-        discount_amount: verifiedDiscount,
-        payment_method: data.payment_method,
-        customer_notes: data.customer_notes,
-        scheduled_delivery_time: data.scheduled_delivery_time || null,
-        status: 'pending',
-      })
+      .insert({ ...orderPayloadBase, customer_uid: data.customer_uid || null })
       .select()
       .single()
+
+    if (orderError) {
+      console.error('[Orders POST] Insert with customer_uid failed, retrying without it:', orderError.message)
+      const retry = await serviceClient
+        .from('orders')
+        .insert(orderPayloadBase)
+        .select()
+        .single()
+      order = retry.data
+      orderError = retry.error
+    }
 
     if (orderError || !order) {
       console.error('[Orders POST] Insert error:', orderError)

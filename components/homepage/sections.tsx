@@ -45,10 +45,11 @@ function t(
 interface HeroSectionProps {
   section: HomepageSection
   brands: Brand[] | null
+  offers?: Offer[] | null
   locale?: string
 }
 
-export function HeroSection({ section, locale = 'ar' }: HeroSectionProps) {
+export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps) {
   const content = (section.content || {}) as {
     slides?: Array<{
       image_url: string
@@ -62,7 +63,27 @@ export function HeroSection({ section, locale = 'ar' }: HeroSectionProps) {
     }>
   }
 
-  const slides = content.slides?.length
+  // WHAT: العروض النشطة (لو موجودة) بتتحول تلقائياً لسلايدز بتلف في
+  //       البانر العلوي — مفيش داعي الأدمن يدخل يظبط سلايد يدوي لكل
+  //       عرض بيضيفه
+  // WHY:  ده بالظبط اللي طلبه العميل: العروض تظهر فوق مكان "عرض
+  //       اليوم" وتتحرك لوحدها، بدل ما تكون قايمة ساكنة تحت الصفحة
+  const offerSlides = (offers || [])
+    .filter((offer) => offer.image_url)
+    .map((offer) => ({
+      image_url: offer.image_url as string,
+      title_ar: offer.title_ar,
+      title_en: offer.title_en,
+      subtitle_ar: offer.description_ar || (offer.type === 'percentage' ? `خصم ${offer.discount_value}%` : undefined),
+      subtitle_en: offer.description_en || (offer.type === 'percentage' ? `${offer.discount_value}% off` : undefined),
+      cta_ar: 'اطلب دلوقتي 🍕',
+      cta_en: 'Order Now 🍕',
+      link: '/offers',
+    }))
+
+  const slides = offerSlides.length
+    ? offerSlides
+    : content.slides?.length
     ? content.slides
     : [
         {
@@ -119,7 +140,9 @@ export function HeroSection({ section, locale = 'ar' }: HeroSectionProps) {
           className="max-w-[75%] md:max-w-md"
         >
           <span className="inline-block text-[10.5px] md:text-xs font-bold bg-white/25 backdrop-blur-sm px-2.5 py-1 rounded-full mb-2">
-            🔥 {locale === 'en' ? "Today's Offer" : 'عرض اليوم'}
+            🔥 {offerSlides.length > 1
+              ? (locale === 'en' ? 'Special Offers' : 'عروض خاصة')
+              : (locale === 'en' ? "Today's Offer" : 'عرض اليوم')}
           </span>
           <h1 className="text-xl md:text-3xl font-extrabold mb-1 drop-shadow-lg leading-tight">
             {t(slide, locale, section.title_ar || 'UNO & SAMIR GROUP')}
@@ -195,38 +218,87 @@ export function BrandsSection({ section, brands, locale = 'ar' }: BrandsSectionP
           {t(section, locale, locale === 'en' ? 'Our Brands' : 'البراندات بتاعتنا')}
         </h2>
         <div className="flex flex-col gap-2.5">
-          {filteredBrands?.map((brand) => (
-            <Link
-              key={brand.id}
-              href={`/${brand.slug}/menu`}
-              className="group flex items-center gap-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 transition-colors"
-            >
+          {filteredBrands?.map((brand) =>
+            brand.slug === 'ala-el-roof' ? (
+              // WHAT: "على الروف" هو المكان الوحيد اللي فيه حجز طاولة —
+              //       صفحة الحجز (/ala-el-roof/reserve) كانت موجودة
+              //       وشغالة، بس مفيش ولا رابط واحد في الموقع كله بيوديك
+              //       ليها. ضفنا زرار منفصل هنا عشان العميل يقدر يوصلها
+              // WHY:  الصف بقى فيه هدفين مختلفين (شوف المنيو / احجز
+              //       طاولة)، فقسمناه لرابطين منفصلين بدل رابط واحد
+              //       يغطي الصف كله
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 ${
-                  brandPastelBg[brand.slug] || 'bg-gray-100'
-                }`}
+                key={brand.id}
+                className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 transition-colors"
               >
-                {brand.cover_url ? (
-                  <div className="relative w-full h-full rounded-2xl overflow-hidden">
-                    <Image src={brand.cover_url} alt={t(brand, locale, '')} fill className="object-cover" />
+                <Link
+                  href={`/${brand.slug}/menu`}
+                  className="group flex items-center gap-3 flex-1 min-w-0"
+                >
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 ${
+                      brandPastelBg[brand.slug] || 'bg-gray-100'
+                    }`}
+                  >
+                    {brand.logo_url || brand.cover_url ? (
+                      <div className="relative w-full h-full rounded-2xl overflow-hidden">
+                        <Image src={brand.logo_url || brand.cover_url || ''} alt={t(brand, locale, '')} fill className="object-cover" />
+                      </div>
+                    ) : (
+                      brandEmojis[brand.slug] || '☕'
+                    )}
                   </div>
-                ) : (
-                  brandEmojis[brand.slug] || '🍽️'
-                )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[14px] font-extrabold truncate">
+                      {t(brand, locale, brand.name_ar || '')}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                      {locale === 'en'
+                        ? (brand.description_en || brand.description_ar || 'Rooftop café')
+                        : (brand.description_ar || 'كافيه واكتر')}
+                    </p>
+                  </div>
+                </Link>
+                <Link
+                  href="/ala-el-roof/reserve"
+                  className="flex-shrink-0 bg-red-600 hover:bg-red-700 text-white text-[11.5px] font-bold px-3.5 py-2.5 rounded-xl whitespace-nowrap transition-colors"
+                >
+                  {locale === 'en' ? 'Reserve' : 'احجز طاولة'}
+                </Link>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-[14px] font-extrabold truncate">
-                  {t(brand, locale, brand.name_ar || '')}
-                </h3>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                  {locale === 'en'
-                    ? (brand.description_en || brand.description_ar || 'Best food in Marsa Matrouh')
-                    : (brand.description_ar || 'أشهى المأكولات في مرسى مطروح')}
-                </p>
-              </div>
-              <span className="text-gray-300 text-lg group-hover:-translate-x-0.5 transition-transform">‹</span>
-            </Link>
-          ))}
+            ) : (
+              <Link
+                key={brand.id}
+                href={`/${brand.slug}/menu`}
+                className="group flex items-center gap-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 transition-colors"
+              >
+                <div
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 ${
+                    brandPastelBg[brand.slug] || 'bg-gray-100'
+                  }`}
+                >
+                  {brand.logo_url || brand.cover_url ? (
+                    <div className="relative w-full h-full rounded-2xl overflow-hidden">
+                      <Image src={brand.logo_url || brand.cover_url || ''} alt={t(brand, locale, '')} fill className="object-cover" />
+                    </div>
+                  ) : (
+                    brandEmojis[brand.slug] || '🍽️'
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[14px] font-extrabold truncate">
+                    {t(brand, locale, brand.name_ar || '')}
+                  </h3>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {locale === 'en'
+                      ? (brand.description_en || brand.description_ar || 'Best food in Marsa Matrouh')
+                      : (brand.description_ar || 'أشهى المأكولات في مرسى مطروح')}
+                  </p>
+                </div>
+                <span className="text-gray-300 text-lg group-hover:-translate-x-0.5 transition-transform">‹</span>
+              </Link>
+            )
+          )}
         </div>
       </div>
     </section>
