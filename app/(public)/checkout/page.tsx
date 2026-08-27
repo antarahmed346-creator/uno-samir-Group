@@ -220,17 +220,16 @@ export default function CheckoutPage() {
         // WHAT: لو الرد مش JSON صالح، نطبع النص الخام بدل ما نبلع الخطأ في {}
         // WHY:  {} فاضي مبيقولش حاجة — النص الخام بيوريك السبب الحقيقي
         const rawText = await res.text()
-        let errorData: { error?: string; details?: unknown } = {}
+        let errorData: { error?: string; debug?: string; details?: unknown } = {}
         try {
           errorData = JSON.parse(rawText)
         } catch {
           console.error('Order error — non-JSON response:', res.status, rawText.slice(0, 500))
         }
         console.error('Order error:', res.status, errorData)
-        toast.error(
-          errorData.error ||
-            (isRTL ? 'فشل إنشاء الطلب — حاول تاني' : 'Failed to create order — try again')
-        )
+        const baseMsg =
+          errorData.error || (isRTL ? 'فشل إنشاء الطلب — حاول تاني' : 'Failed to create order — try again')
+        toast.error(errorData.debug ? `${baseMsg}: ${errorData.debug}` : baseMsg)
         setLoading(false)
         return
       }

@@ -268,7 +268,16 @@ export async function POST(request: NextRequest) {
 
     if (orderError || !order) {
       console.error('[Orders POST] Insert error:', orderError)
-      return Response.json({ error: 'Failed to create order' }, { status: 500 })
+      // WHAT: بنطلع رسالة الخطأ الحقيقية من قاعدة البيانات مؤقتاً —
+      //       عشان نعرف السبب الفعلي بدل ما نخمن تاني
+      // WHY:  الرسالة العامة "Failed to create order" مبتقولش حاجة —
+      //       ده اللي خلانا ندور 3 مرات من غير ما نوصل للسبب الحقيقي
+      // KILL: لما نلاقي ونصلح السبب، نرجع الرسالة العامة تاني عشان
+      //       ميبانش تفاصيل قاعدة البيانات لأي حد بيجرب يطلب
+      return Response.json(
+        { error: 'Failed to create order', debug: orderError?.message || 'order or error both empty' },
+        { status: 500 }
+      )
     }
 
     // WHAT: بيزود عداد استخدام الكوبون بعد ما الطلب اتسجل بنجاح
