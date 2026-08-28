@@ -227,14 +227,22 @@ export async function POST(request: NextRequest) {
 
     const verifiedTotal = Math.max(data.subtotal + data.delivery_fee - verifiedDiscount, 0)
 
-    // WHAT: بنحاول نضيف customer_uid (لربط الطلب بالإشعارات) — لو
-    //       فشلت المحاولة الأولى (مثلاً لأن العمود لسه مش موجود في
-    //       قاعدة البيانات، زي لو الـ SQL الجديد لسه ماتشغلش)، بنعيد
-    //       المحاولة من غيره تاني
-    // WHY:  إتمام الطلب هو الأهم على الإطلاق — ميزة الإشعارات لازم
-    //       متوقفش عميل حقيقي عن إتمام طلبه لو مفيش عمود جديد لسه
-    const orderPayloadBase = {
+    // WHAT: بنحاول نحفظ الطلب بكل تفاصيله. لو قاعدة البيانات الحقيقية
+    //       ناقصها عمود (زي لو الـ SQL الجديد لسه ماتشغلش)، Postgres
+    //       بيقولنا بالظبط اسم العمود الناقص في رسالة الخطأ — فبنشيله
+    //       من المحاولة الجاية ونعيد تاني، لحد ما ينجح أو نوصل لحد
+    //       أقصى من المحاولات
+    // WHY:  إتمام طلب العميل هو الأهم على الإطلاق. مبلغ الطلب النهائي
+    //       (total) أصلاً بيحسب الخصم فيه صح مهما حصل — يعني حتى لو
+    //       عمود التفاصيل (coupon_code مثلاً) اتشال من المحاولة،
+    //       العميل لسه بيتحاسب بالسعر الصح، وبس التفاصيل الإضافية
+    //       اللي مش أساسية هي اللي بتتفقد
+    // KILL: من غيرها، أي عمود ناقص في السيرفر الحقيقي بيوقف كل الطلبات
+    //       تماماً لحد ما نكتشفه يدوي ونصلحه واحد واحد — زي ما حصل
+    //       فعلياً 3 مرات في نفس الجلسة دي
+    let orderPayload: Record<string, unknown> = {
       brand_id: data.brand_id,
+      customer_uid: data.customer_uid || null,
       customer_name: data.customer_name,
       customer_phone: data.customer_phone,
       customer_address: data.customer_address,
@@ -249,21 +257,27 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     }
 
-    let { data: order, error: orderError } = await serviceClient
-      .from('orders')
-      .insert({ ...orderPayloadBase, customer_uid: data.customer_uid || null })
-      .select()
-      .single()
+    let order: { id: string; customer_uid?: string | null } | null = null
+    let orderError: { message: string } | null = null
 
-    if (orderError) {
-      console.error('[Orders POST] Insert with customer_uid failed, retrying without it:', orderError.message)
-      const retry = await serviceClient
-        .from('orders')
-        .insert(orderPayloadBase)
-        .select()
-        .single()
-      order = retry.data
-      orderError = retry.error
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const result = await serviceClient.from('orders').insert(orderPayload).select().single()
+      order = result.data
+      orderError = result.error
+
+      if (!orderError) break
+
+      const missingColumnMatch = orderError.message.match(/Could not find the '(\w+)' column/)
+      if (missingColumnMatch && missingColumnMatch[1] in orderPayload) {
+        const missingCol = missingColumnMatch[1]
+        console.error(`[Orders POST] Column '${missingCol}' missing from live schema, retrying without it:`, orderError.message)
+        const nextPayload = { ...orderPayload }
+        delete nextPayload[missingCol]
+        orderPayload = nextPayload
+        continue
+      }
+      // خطأ من نوع تاني مش عمود ناقص — مفيش داعي نكرر، هنوقف هنا
+      break
     }
 
     if (orderError || !order) {
