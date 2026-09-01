@@ -94,7 +94,7 @@ export default async function PublicLayout({
                 <span className="md:hidden">📦</span>
               </Link>
 
-              <NotificationBell />
+              <NotificationBell isRTL={isRTL} />
               <ThemeToggle />
               <CartIcon />
               <LanguageSwitcher currentLocale={locale} currentPath={currentPath} />

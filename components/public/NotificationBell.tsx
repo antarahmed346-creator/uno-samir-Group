@@ -28,7 +28,7 @@ const typeIcon: Record<string, string> = {
   announcement: '📢',
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ isRTL = true }: { isRTL?: boolean }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -123,7 +123,11 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute top-12 left-0 sm:left-auto sm:right-0 w-80 max-h-96 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl z-50">
+        <div
+          className={`absolute top-12 w-80 max-h-96 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl z-50 ${
+            isRTL ? 'right-0' : 'left-0'
+          }`}
+        >
           <div className="p-3 border-b border-gray-100 dark:border-gray-800 font-bold text-sm">
             الإشعارات
           </div>

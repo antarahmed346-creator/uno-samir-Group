@@ -58,11 +58,16 @@ interface AddToCartButtonProps {
     brand_name_en: string | null;  // ← أضفنا brand_name_en
   };
   customizationGroups?: CustomizationGroup[];
+  // WHAT: نسخة أصغر تتناسب مع كروت المنتجات الصغيرة (الرئيسية/المنيو)
+  // WHY:  الزرار كان بنفس حجمه في كل مكان — في الكروت الصغيرة (اسم
+  //       المنتج نفسه text-[11px]) كان بيبان ضخم وغير متناسق جداً
+  compact?: boolean;
 }
 
 export default function AddToCartButton({
   product,
   customizationGroups = [],
+  compact = false,
 }: AddToCartButtonProps) {
   const locale = useLocale()
   const isRTL = locale === 'ar'
@@ -173,7 +178,11 @@ export default function AddToCartButton({
         onClick={handleAdd}
         disabled={isAdding}
         whileTap={{ scale: 0.95 }}
-        className="w-full bg-[#D4AF37] hover:bg-[#c49b2a] disabled:opacity-70 text-black font-semibold px-6 py-3 rounded-full text-sm transition-all hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2"
+        className={
+          compact
+            ? "w-full bg-[#D4AF37] hover:bg-[#c49b2a] disabled:opacity-70 text-black font-semibold px-2 py-1.5 rounded-full text-[10.5px] transition-all active:scale-95 flex items-center justify-center gap-1"
+            : "w-full bg-[#D4AF37] hover:bg-[#c49b2a] disabled:opacity-70 text-black font-semibold px-6 py-3 rounded-full text-sm transition-all hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2"
+        }
       >
         <AnimatePresence mode="wait">
           {showSuccess ? (
@@ -182,9 +191,9 @@ export default function AddToCartButton({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="flex items-center gap-2"
+              className={compact ? "flex items-center gap-1" : "flex items-center gap-2"}
             >
-              <Check className="w-5 h-5" />
+              <Check className={compact ? "w-3.5 h-3.5" : "w-5 h-5"} />
               <span>{isRTL ? 'تم الإضافة' : 'Added!'}</span>
             </motion.span>
           ) : isAdding ? (
@@ -193,9 +202,9 @@ export default function AddToCartButton({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2"
+              className={compact ? "flex items-center gap-1" : "flex items-center gap-2"}
             >
-              <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              <span className={compact ? "w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" : "w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"} />
               <span>{isRTL ? 'جاري الإضافة...' : 'Adding...'}</span>
             </motion.span>
           ) : (
@@ -204,9 +213,9 @@ export default function AddToCartButton({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2"
+              className={compact ? "flex items-center gap-1" : "flex items-center gap-2"}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className={compact ? "w-3.5 h-3.5" : "w-5 h-5"} />
               <span>{hasCustomizations ? (isRTL ? "اختيار التخصيصات" : "Customize") : (isRTL ? "أضف للسلة" : "Add to Cart")}</span>
             </motion.span>
           )}

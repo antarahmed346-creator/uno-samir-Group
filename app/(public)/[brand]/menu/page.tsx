@@ -262,6 +262,7 @@ export default async function MenuPage({ params, searchParams }: Props) {
                         brand_name_en: product.brand?.name_en || null,
                       }}
                       customizationGroups={product.customization_groups}
+                      compact
                     />
                   </div>
                 </div>

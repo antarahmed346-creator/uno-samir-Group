@@ -29,15 +29,30 @@ function sanitizeHtml(html: string): string {
 }
 
 // ─── Helper: pick text based on locale ──────────────────────────
+// WHAT: بياخد النص بلغة الموقع الحالية
+// WHY:  الأدمن ممكن يظبط عنوان قسم بالعربي بس من غير ما يحط نسخة
+//       إنجليزي — لو المستخدم مبدّل للإنجليزي، المفروض يشوف الافتراضي
+//       الإنجليزي (fallback) مش النص العربي اللي الأدمن كتبه
+// KILL: الترتيب القديم كان بيحط كل حقول اللغتين قبل الـ fallback،
+//       فكان بيورّي عربي في وضع إنجليزي كل ما title_en يكون فاضي —
+//       ده اللي كان بيحصل بالظبط لما الأدمن يظبط عنوان قسم بالعربي بس
 function t(
   item: { name_ar?: string | null; name_en?: string | null; title_ar?: string | null; title_en?: string | null; description_ar?: string | null; description_en?: string | null; subtitle_ar?: string | null; subtitle_en?: string | null; text_ar?: string | null; text_en?: string | null; caption_ar?: string | null; caption_en?: string | null; cta_ar?: string | null; cta_en?: string | null },
   locale: string,
   fallback?: string
 ): string {
   if (locale === 'en') {
-    return item.name_en || item.title_en || item.description_en || item.subtitle_en || item.text_en || item.caption_en || item.cta_en || item.name_ar || item.title_ar || item.description_ar || item.subtitle_ar || item.text_ar || item.caption_ar || item.cta_ar || fallback || ''
+    return (
+      item.name_en || item.title_en || item.description_en || item.subtitle_en || item.text_en || item.caption_en || item.cta_en ||
+      fallback ||
+      item.name_ar || item.title_ar || item.description_ar || item.subtitle_ar || item.text_ar || item.caption_ar || item.cta_ar || ''
+    )
   }
-  return item.name_ar || item.title_ar || item.description_ar || item.subtitle_ar || item.text_ar || item.caption_ar || item.cta_ar || item.name_en || item.title_en || item.description_en || item.subtitle_en || item.text_en || item.caption_en || item.cta_en || fallback || ''
+  return (
+    item.name_ar || item.title_ar || item.description_ar || item.subtitle_ar || item.text_ar || item.caption_ar || item.cta_ar ||
+    fallback ||
+    item.name_en || item.title_en || item.description_en || item.subtitle_en || item.text_en || item.caption_en || item.cta_en || ''
+  )
 }
 
 // ─── Hero Section ──────────────────────────────────────────────
@@ -444,6 +459,7 @@ function ProductCard({ product, locale }: { product: ProductWithOptions; locale:
             brand_name_en: product.brand?.name_en || null,
           }}
           customizationGroups={product.customization_groups}
+          compact
         />
       </div>
     </div>
