@@ -43,7 +43,7 @@ export async function PATCH(
     // Role check
     const { data: adminUser, error: adminError } = await serviceClient
       .from('admin_users')
-      .select('role, brand_access, is_active')
+      .select('role, brand_access, permissions, is_active')
       .eq('id', user.id)
       .single()
 
@@ -58,9 +58,11 @@ export async function PATCH(
 
     const role = adminUser.role as string
     const brandAccess = adminUser.brand_access as string[] | null
+    const permissions = adminUser.permissions as Record<string, boolean> | null
 
-    // Only super_admin and brand_manager can update reservations
-    if (!['super_admin', 'brand_manager'].includes(role)) {
+    // super_admin, legacy brand_manager, or anyone granted the new
+    // granular "reservations" permission
+    if (role !== 'super_admin' && role !== 'brand_manager' && !permissions?.reservations) {
       return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -77,8 +79,8 @@ export async function PATCH(
 
     const { status } = result.data
 
-    // Brand isolation: brand_manager لازم يكون "على الروف" ضمن براندز المتاحة له
-    if (role === 'brand_manager') {
+    // Brand isolation: any non-super-admin must have "على الروف" within their granted brands
+    if (role !== 'super_admin') {
       const { data: brand } = await serviceClient
         .from('brands')
         .select('id')

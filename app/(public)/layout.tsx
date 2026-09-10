@@ -96,7 +96,7 @@ export default async function PublicLayout({
 
               <NotificationBell isRTL={isRTL} />
               <ThemeToggle />
-              <CartIcon />
+              <CartIcon locale={locale} />
               <LanguageSwitcher currentLocale={locale} currentPath={currentPath} />
             </div>
           </div>

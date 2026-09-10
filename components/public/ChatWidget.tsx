@@ -74,9 +74,16 @@ export default function ChatWidget() {
       if (!cancelled) setReady(true)
     }
 
-    init()
+    // WHAT: بنستنى ثانيتين قبل ما نبدأ الفحص، بدل ما يبدأ فوراً لحظة
+    //       ما أي صفحة عامة تفتح
+    // WHY:  الشات موجود في كل صفحة في الموقع، ودي 3 طلبات شبكة
+    //       (auth + استعلامين) بتحصل تلقائي حتى لو العميل هيفتح
+    //       الشات ولا لأ — التأخير البسيط ده بيخلي المحتوى الأساسي
+    //       للصفحة (صور، منتجات) يستحوذ على الموارد الأول
+    const initTimer = setTimeout(init, 2000)
     return () => {
       cancelled = true
+      clearTimeout(initTimer)
     }
   }, [])
 

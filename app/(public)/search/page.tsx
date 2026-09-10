@@ -282,7 +282,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {products.map((product) => (
               <Link
                 key={product.id}
-                href={`/product/${product.id}`}
+                href={localize(`/product/${product.id}`)}
                 className="group block bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="relative h-48 bg-gray-100">

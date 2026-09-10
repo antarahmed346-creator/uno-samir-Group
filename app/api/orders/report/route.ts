@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     // Role check
     const { data: adminUser, error: adminError } = await serviceClient
       .from('admin_users')
-      .select('role, brand_access, is_active')
+      .select('role, brand_access, permissions, is_active')
       .eq('id', user.id)
       .single()
 
@@ -61,9 +61,11 @@ export async function GET(request: NextRequest) {
 
     const role = adminUser.role as string
     const brandAccess = adminUser.brand_access as string[] | null
+    const permissions = adminUser.permissions as Record<string, boolean> | null
 
-    // content_editor لا يشوف تقارير مالية
-    if (role !== 'super_admin' && role !== 'brand_manager') {
+    // super_admin, legacy brand_manager, or anyone granted the new
+    // granular "reports" permission
+    if (role !== 'super_admin' && role !== 'brand_manager' && !permissions?.reports) {
       return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -101,7 +103,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     // Brand isolation: نفس منطق app/api/orders/route.ts
-    if (role === 'brand_manager') {
+    if (role !== 'super_admin') {
       if (!brandAccess || brandAccess.length === 0) {
         return Response.json({ data: { delivered: [], cancelled: [] } }, { status: 200 })
       }

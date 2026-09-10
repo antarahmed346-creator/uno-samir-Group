@@ -4,6 +4,7 @@
 // KILL: من غيرها، زرار "القائمة" في الشريط السفلي هيوديك لصفحة فاضية
 
 import Link from 'next/link'
+import { localize } from '@/lib/i18n'
 import { cookies } from 'next/headers'
 import { Phone, MessageCircle, FileText, Shield, MapPin, UtensilsCrossed, User } from 'lucide-react'
 import ThemeToggle from '@/components/public/ThemeToggle'
@@ -129,11 +130,11 @@ export default async function InfoPage() {
           {isRTL ? 'قانوني' : 'Legal'}
         </p>
         <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden">
-          <Link href="/terms" className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-800 text-[13px] font-semibold text-gray-800 dark:text-gray-100">
+          <Link href={localize("/terms", locale)} className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-800 text-[13px] font-semibold text-gray-800 dark:text-gray-100">
             <FileText className="w-[18px] h-[18px] text-gray-500 dark:text-gray-400 flex-shrink-0" />
             {isRTL ? 'الشروط والأحكام' : 'Terms & Conditions'}
           </Link>
-          <Link href="/privacy" className="flex items-center gap-3 px-4 py-4 text-[13px] font-semibold text-gray-800 dark:text-gray-100">
+          <Link href={localize("/privacy", locale)} className="flex items-center gap-3 px-4 py-4 text-[13px] font-semibold text-gray-800 dark:text-gray-100">
             <Shield className="w-[18px] h-[18px] text-gray-500 dark:text-gray-400 flex-shrink-0" />
             {isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}
           </Link>

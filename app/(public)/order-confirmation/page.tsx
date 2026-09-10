@@ -1,15 +1,22 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, ArrowRight, ClipboardList, Clock, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { localize } from "@/lib/i18n";
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderNumbers = searchParams.getAll("order");
   const phone = searchParams.get("phone") || "";
+  const [locale, setLocale] = useState('ar');
+
+  useEffect(() => {
+    const match = document.cookie.match(/locale=([^;]+)/);
+    setLocale(match ? match[1] : 'ar');
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12" dir="rtl">
@@ -89,7 +96,7 @@ function OrderConfirmationContent() {
         >
           {phone && (
             <Link
-              href={`/track-order?phone=${encodeURIComponent(phone)}`}
+              href={`${localize('/track-order', locale)}?phone=${encodeURIComponent(phone)}`}
               className="block w-full bg-[#D4AF37] hover:bg-[#c49b2a] text-black font-bold py-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#D4AF37]/20"
             >
               <ClipboardList className="w-5 h-5" />
@@ -98,7 +105,7 @@ function OrderConfirmationContent() {
           )}
 
           <Link
-            href="/"
+            href={localize("/", locale)}
             className="block w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
           >
             <span>العودة للرئيسية</span>

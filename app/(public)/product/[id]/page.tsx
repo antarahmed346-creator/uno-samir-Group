@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { localize } from '@/lib/i18n'
 import { Plus, Minus, Star, Clock, Flame, ChevronLeft, ShoppingBag } from 'lucide-react'
 import { useCartStore } from '@/lib/store/cart'
 import { createBrowserClient } from '@supabase/ssr'
@@ -178,7 +179,7 @@ export default function ProductPage() {
         
         {/* Back button */}
         <Link
-          href={`/${(product.brand as Record<string, unknown>)?.slug as string}`}
+          href={localize(`/${(product.brand as Record<string, unknown>)?.slug as string}`, locale)}
           className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition"
         >
           <ChevronLeft className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />

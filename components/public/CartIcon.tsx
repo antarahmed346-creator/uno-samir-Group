@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/lib/store/cart";
+import { localize } from "@/lib/i18n";
 
-export default function CartIcon() {
+export default function CartIcon({ locale = 'ar' }: { locale?: string }) {
   const totalItems = useCartStore((s) => s.getTotalItems());
 
   return (
-    <Link href="/cart" className="relative group">
+    <Link href={localize("/cart", locale)} className="relative group">
       <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}

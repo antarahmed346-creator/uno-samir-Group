@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useCartStore } from "@/lib/store/cart";
 import { useCouponStore, calculateDiscount } from "@/lib/store/coupon";
 import { toast } from "sonner";
+import { localize } from "@/lib/i18n";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -122,7 +123,7 @@ export default function CartPage() {
             {isRTL ? 'ابدأ طلبك بإضافة بعض الأطباق اللذيذة' : 'Start your order by adding some delicious dishes'}
           </p>
           <Link
-            href="/"
+            href={localize("/", locale)}
             className="inline-flex items-center gap-2 bg-[#D4AF37] hover:bg-[#c49b2a] text-black font-semibold px-8 py-3 rounded-full transition-all hover:scale-[1.03]"
           >
             <span>{isRTL ? 'تصفح المنيو' : 'Browse Menu'}</span>
@@ -153,7 +154,7 @@ export default function CartPage() {
             </div>
           </div>
           <Link
-            href="/"
+            href={localize("/", locale)}
             className="text-white/60 hover:text-white text-sm flex items-center gap-1 transition-colors"
           >
             <ChevronLeft className={`w-4 h-4 ${isRTL ? '' : 'rotate-180'}`} />
@@ -315,7 +316,7 @@ export default function CartPage() {
               )}
             </div>
             <Link
-              href="/checkout"
+              href={localize("/checkout", locale)}
               className="bg-[#D4AF37] hover:bg-[#c49b2a] text-black font-bold px-8 py-4 rounded-xl transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-2 shadow-lg shadow-[#D4AF37]/20"
             >
               <span>{isRTL ? 'إتمام الطلب' : 'Checkout'}</span>

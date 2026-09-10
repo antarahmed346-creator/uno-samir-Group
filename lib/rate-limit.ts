@@ -112,6 +112,18 @@ export const rateLimiters = {
     analytics: true,
     prefix: 'ratelimit:chat_message',
   }),
+
+  // Coupon Validation: 15 attempts per 5 minutes per IP
+  // WHAT: Prevents rapid-fire guessing of valid coupon codes
+  // WHY:  Generous enough for a customer trying a couple of mistyped/expired
+  //       codes while checking out; bounded enough to slow down brute-forcing
+  // KILL: Remove this → someone can script through many codes to find valid ones
+  couponValidation: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(15, '5 m'),
+    analytics: true,
+    prefix: 'ratelimit:coupon_validation',
+  }),
 }
 
 // ─── Helper: Get client identifier ───────────────────────────────────────

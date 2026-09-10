@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cookies } from 'next/headers'
+import { localize as localizePath } from '@/lib/i18n'
 import {
   generateSeoMetadata,
   BreadcrumbJsonLd,
@@ -187,7 +188,7 @@ function ProductCard({ product, locale }: { product: Product; locale: string }) 
   const nameOther = isRTL ? (product.name_en || product.name_ar) : product.name_ar
 
   return (
-    <Link href={`/product/${product.id}`} className="block bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
+    <Link href={localizePath(`/product/${product.id}`, locale)} className="block bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
       <div className="h-48 bg-gray-200 relative overflow-hidden">
         {product.main_image_url ? (
           <Image

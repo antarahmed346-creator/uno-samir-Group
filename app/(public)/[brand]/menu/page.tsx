@@ -167,13 +167,6 @@ export default async function MenuPage({ params, searchParams }: Props) {
     customization_groups: customizationGroups.filter(g => g.product_id === product.id)
   })) || []
 
-  const colors: Record<string, string> = {
-    'pizza-uno': 'from-green-600 to-green-800',
-    'feteer-samir': 'from-red-600 to-red-800',
-    'uno-crepe': 'from-yellow-500 to-amber-800',
-    'ala-el-roof': 'from-gray-900 to-black',
-  }
-
   const brandName = BRAND_NAMES[brand.slug as keyof typeof BRAND_NAMES]
 
   const localize = (path: string) =>
@@ -192,10 +185,9 @@ export default async function MenuPage({ params, searchParams }: Props) {
       {/* ✅ Wrap with RealtimeProvider for live updates */}
       <RealtimeProvider brandId={brand.id}>
         <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
-          <section className={`py-12 rounded-2xl bg-gradient-to-br ${colors[brand.slug] || 'from-gray-600 to-gray-800'} text-white text-center`}>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">{t(brand.name_ar, brand.name_en, brand.name_ar)}</h1>
-            <p className="text-lg opacity-90">{isRTL ? 'القائمة الكاملة' : 'Full Menu'}</p>
-            <BrandLocationButton locations={locations || []} locale={locale} />
+          <section className="flex items-center justify-between gap-3 pt-2">
+            <h1 className="text-xl font-bold">{t(brand.name_ar, brand.name_en, brand.name_ar)}</h1>
+            <BrandLocationButton locations={locations || []} locale={locale} compact />
           </section>
 
           <section className="flex gap-3 flex-wrap justify-center">

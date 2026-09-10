@@ -52,7 +52,7 @@ export async function GET(
     // Role check
     const { data: adminUser, error: adminError } = await serviceClient
       .from('admin_users')
-      .select('role, brand_access, is_active')
+      .select('role, brand_access, permissions, is_active')
       .eq('id', user.id)
       .single()
 
@@ -83,8 +83,8 @@ export async function GET(
       return Response.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Brand isolation: brand_manager can only see own brand orders
-    if (role === 'brand_manager' && brandId && (order as { brand_id: string }).brand_id !== brandId) {
+    // Brand isolation: any non-super-admin can only see their own brand's orders
+    if (role !== 'super_admin' && brandId && (order as { brand_id: string }).brand_id !== brandId) {
       return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -130,7 +130,7 @@ export async function PATCH(
     // Role check
     const { data: adminUser, error: adminError } = await serviceClient
       .from('admin_users')
-      .select('role, brand_access, is_active')
+      .select('role, brand_access, permissions, is_active')
       .eq('id', user.id)
       .single()
 
@@ -145,9 +145,11 @@ export async function PATCH(
 
     const role = adminUser.role as string
     const brandId = adminUser.brand_access as string | null
+    const permissions = adminUser.permissions as Record<string, boolean> | null
 
-    // Only super_admin and brand_manager can update orders
-    if (!['super_admin', 'brand_manager'].includes(role)) {
+    // Super admin, legacy brand_manager, or anyone granted the new
+    // granular "orders" permission can update orders
+    if (role !== 'super_admin' && role !== 'brand_manager' && !permissions?.orders) {
       return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -164,8 +166,8 @@ export async function PATCH(
 
     const { status, admin_notes } = result.data
 
-    // Verify order belongs to admin's brand (for brand_manager)
-    if (role === 'brand_manager' && brandId) {
+    // Verify order belongs to admin's brand (any non-super-admin is brand-scoped)
+    if (role !== 'super_admin' && brandId) {
       const { data: orderCheck } = await serviceClient
         .from('orders')
         .select('brand_id')

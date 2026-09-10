@@ -7,6 +7,7 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { rateLimiters, getClientIdentifier, checkRateLimit } from '@/lib/rate-limit'
 
 const validateSchema = z.object({
   code: z.string().min(1),
@@ -25,6 +26,21 @@ function getServiceClient() {
 
 export async function POST(request: NextRequest) {
   try {
+    // NOTE: لو Redis نفسه فشل، منمنعش عميل حقيقي من التحقق من كوبونه
+    //       بسبب مشكلة في خدمة خارجية — بنسجل الخطأ ونكمل
+    try {
+      const identifier = getClientIdentifier(request)
+      const rl = await checkRateLimit(rateLimiters.couponValidation, identifier)
+      if (!rl.allowed) {
+        return Response.json(
+          { error: 'محاولات كتير أوي، حاول تاني بعد شوية' },
+          { status: 429 }
+        )
+      }
+    } catch (rateLimitErr) {
+      console.error('[Coupon Validate] Rate limit check failed, allowing through:', rateLimitErr)
+    }
+
     const body = await request.json()
     const result = validateSchema.safeParse(body)
 
@@ -110,8 +126,9 @@ export async function POST(request: NextRequest) {
       discountAmount: discount,
     })
   } catch (error) {
+    console.error('[Coupon Validate] Unexpected error:', error)
     return Response.json(
-      { error: error instanceof Error ? error.message : 'خطأ غير متوقع' },
+      { error: 'حصل خطأ، حاول تاني' },
       { status: 500 }
     )
   }

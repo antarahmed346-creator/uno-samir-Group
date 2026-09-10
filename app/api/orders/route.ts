@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     // Role check
     const { data: adminUser, error: adminError } = await serviceClient
       .from('admin_users')
-      .select('role, brand_access, is_active')
+      .select('role, brand_access, permissions, is_active')
       .eq('id', user.id)
       .single()
 
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status)
     }
 
-    if (role === 'brand_manager' && brandId) {
+    if (role !== 'super_admin' && brandId) {
       query = query.eq('brand_id', brandId)
     } else if (filterBrandId && role === 'super_admin') {
       query = query.eq('brand_id', filterBrandId)

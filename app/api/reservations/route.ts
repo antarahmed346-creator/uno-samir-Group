@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Role check
     const { data: adminUser, error: adminError } = await serviceClient
       .from('admin_users')
-      .select('role, brand_access, is_active')
+      .select('role, brand_access, permissions, is_active')
       .eq('id', user.id)
       .single()
 
@@ -65,9 +65,11 @@ export async function GET(request: NextRequest) {
 
     const role = adminUser.role as string
     const brandAccess = adminUser.brand_access as string[] | null
+    const permissions = adminUser.permissions as Record<string, boolean> | null
 
-    // Only super_admin and brand_manager can view reservations (زي orders بالظبط)
-    if (!['super_admin', 'brand_manager'].includes(role)) {
+    // super_admin, legacy brand_manager, or anyone granted the new
+    // granular "reservations" permission
+    if (role !== 'super_admin' && role !== 'brand_manager' && !permissions?.reservations) {
       return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -81,8 +83,9 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: 'Reservation system unavailable' }, { status: 500 })
     }
 
-    // Brand isolation: brand_manager يشوف الحجوزات بس لو "على الروف" ضمن براندز المتاحة له
-    if (role === 'brand_manager' && !(brandAccess || []).includes(brand.id)) {
+    // Brand isolation: any non-super-admin only sees reservations for
+    // brands they've been granted access to
+    if (role !== 'super_admin' && !(brandAccess || []).includes(brand.id)) {
       return Response.json({ data: [] }, { status: 200 })
     }
 

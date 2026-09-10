@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ChevronLeft, User, Phone, CalendarDays, Clock, Users, MessageSquare, Check, CalendarCheck } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase/client'
+import { localize } from '@/lib/i18n'
 import { toast } from 'sonner'
 
 // ─── Helper: read locale from cookie ───────────────────────────────────────
@@ -141,7 +142,7 @@ export default function AlaElRoofReservePage() {
             {isRTL ? 'سنتواصل معك قريباً لتأكيد الحجز' : 'We will contact you soon to confirm your reservation'}
           </p>
           <Link
-            href="/"
+            href={localize("/", locale)}
             className="inline-flex items-center gap-2 bg-[#D4AF37] hover:bg-[#c49b2a] text-black font-semibold px-8 py-3 rounded-full transition-all"
           >
             <span>{isRTL ? 'العودة للرئيسية' : 'Back to Home'}</span>
@@ -159,7 +160,7 @@ export default function AlaElRoofReservePage() {
           <h1 className="text-xl font-bold text-white mb-2">
             {isRTL ? 'الحجز غير متاح حالياً' : 'Reservations Unavailable'}
           </h1>
-          <Link href="/" className="inline-flex items-center gap-2 text-[#D4AF37] hover:underline">
+          <Link href={localize("/", locale)} className="inline-flex items-center gap-2 text-[#D4AF37] hover:underline">
             <ChevronLeft className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
             <span>{isRTL ? 'العودة للرئيسية' : 'Back to Home'}</span>
           </Link>
@@ -174,7 +175,7 @@ export default function AlaElRoofReservePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Link
-            href="/ala-el-roof"
+            href={localize("/ala-el-roof", locale)}
             className="text-white/60 hover:text-white flex items-center gap-1 transition"
           >
             <ChevronLeft className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />

@@ -14,6 +14,7 @@ import { Star, Clock, Tag } from 'lucide-react'
 import FavoriteButton from '@/components/public/FavoriteButton'
 import AddToCartButton from '@/components/public/AddToCartButton'
 import DOMPurify from 'isomorphic-dompurify'
+import { localize } from '@/lib/i18n'
 
 // WHAT: ينضف أي HTML جاي من الـ CustomSection قبل ما يترندر
 // WHY:  المحتوى ده بيتكتب من لوحة التحكم — أي أدمن (brand_manager أو
@@ -247,7 +248,7 @@ export function BrandsSection({ section, brands, locale = 'ar' }: BrandsSectionP
                 className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 transition-colors"
               >
                 <Link
-                  href={`/${brand.slug}/menu`}
+                  href={localize(`/${brand.slug}/menu`, locale)}
                   className="group flex items-center gap-3 flex-1 min-w-0"
                 >
                   <div
@@ -275,7 +276,7 @@ export function BrandsSection({ section, brands, locale = 'ar' }: BrandsSectionP
                   </div>
                 </Link>
                 <Link
-                  href="/ala-el-roof/reserve"
+                  href={localize("/ala-el-roof/reserve", locale)}
                   className="flex-shrink-0 bg-red-600 hover:bg-red-700 text-white text-[11.5px] font-bold px-3.5 py-2.5 rounded-xl whitespace-nowrap transition-colors"
                 >
                   {locale === 'en' ? 'Reserve' : 'احجز طاولة'}
@@ -284,7 +285,7 @@ export function BrandsSection({ section, brands, locale = 'ar' }: BrandsSectionP
             ) : (
               <Link
                 key={brand.id}
-                href={`/${brand.slug}/menu`}
+                href={localize(`/${brand.slug}/menu`, locale)}
                 className="group flex items-center gap-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 transition-colors"
               >
                 <div
@@ -392,7 +393,7 @@ function ProductCard({ product, locale }: { product: ProductWithOptions; locale:
   return (
     <div className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg dark:hover:shadow-black/30 transition-all duration-300">
       <div className="relative aspect-square bg-gray-50 dark:bg-gray-800">
-        <Link href={`/product/${product.id}`} className="absolute inset-0">
+        <Link href={localize(`/product/${product.id}`, locale)} className="absolute inset-0">
           {product.main_image_url ? (
             <Image
               src={product.main_image_url}
@@ -412,7 +413,7 @@ function ProductCard({ product, locale }: { product: ProductWithOptions; locale:
         <FavoriteButton productId={product.id} />
       </div>
       <div className="p-2">
-        <Link href={`/product/${product.id}`}>
+        <Link href={localize(`/product/${product.id}`, locale)}>
           <h3 className="font-bold text-[11px] mb-1 leading-tight line-clamp-2 min-h-[2.4em] group-hover:text-green-700 transition">
             {t(product, locale, product.name_ar || '')}
           </h3>

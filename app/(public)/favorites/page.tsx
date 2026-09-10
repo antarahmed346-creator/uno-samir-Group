@@ -13,8 +13,9 @@ import { Heart } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase/client'
 import { useFavoriteIds, toggleFavorite } from '@/components/public/FavoriteButton'
 import type { Product } from '@/lib/types'
+import { localize } from '@/lib/i18n'
 
-function EmptyState() {
+function EmptyState({ locale }: { locale: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
       <svg viewBox="0 0 100 100" fill="none" stroke="#cbd5e1" strokeWidth={2.5} className="w-28 h-28 mb-5 opacity-60">
@@ -24,7 +25,7 @@ function EmptyState() {
         <path d="M15 55 L38 55 L44 63 L60 63 L66 55 L75 55" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <p className="text-gray-400 font-semibold text-sm">لسه مفيش حاجة في المفضلة</p>
-      <Link href="/" className="mt-4 text-red-600 font-bold text-sm">
+      <Link href={localize("/", locale)} className="mt-4 text-red-600 font-bold text-sm">
         شوف المنيو ←
       </Link>
     </div>
@@ -35,6 +36,12 @@ export default function FavoritesPage() {
   const favoriteIds = useFavoriteIds()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [locale, setLocale] = useState('ar')
+
+  useEffect(() => {
+    const match = document.cookie.match(/locale=([^;]+)/)
+    setLocale(match ? match[1] : 'ar')
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -75,7 +82,7 @@ export default function FavoritesPage() {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <EmptyState />
+        <EmptyState locale={locale} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {products.map((product) => (
@@ -87,7 +94,7 @@ export default function FavoritesPage() {
               >
                 <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
               </button>
-              <Link href={`/product/${product.id}`}>
+              <Link href={localize(`/product/${product.id}`, locale)}>
                 <div className="relative h-28 bg-gray-50">
                   {product.main_image_url ? (
                     <Image src={product.main_image_url} alt={product.name_ar} fill className="object-cover" />
