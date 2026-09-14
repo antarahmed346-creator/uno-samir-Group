@@ -142,7 +142,13 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
           priority
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-green-600 via-red-600 to-amber-700" />
+        <Image
+          src="/images/hero-blend.jpg"
+          alt=""
+          fill
+          className="object-cover"
+          priority
+        />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
