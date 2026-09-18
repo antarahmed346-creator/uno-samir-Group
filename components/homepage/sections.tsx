@@ -131,7 +131,7 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
   const slide = slides[currentSlide]
 
   return (
-    <section className="relative h-[170px] md:h-[280px] overflow-hidden rounded-2xl mx-4 mt-3">
+    <section className="relative h-[400px] md:h-[520px] overflow-hidden">
       {/* Background */}
       {slide.image_url ? (
         <Image
@@ -150,32 +150,31 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
           priority
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10" />
 
       {/* Content */}
-      <div className="relative h-full flex flex-col justify-center px-5 md:px-8 text-white">
+      <div className="relative h-full flex flex-col justify-center px-6 md:px-16 text-white max-w-3xl">
         <motion.div
           key={currentSlide}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-[75%] md:max-w-md"
         >
-          <span className="inline-block text-[10.5px] md:text-xs font-bold bg-white/25 backdrop-blur-sm px-2.5 py-1 rounded-full mb-2">
+          <span className="inline-block text-xs md:text-sm font-bold bg-white/25 backdrop-blur-sm px-3 py-1.5 rounded-full mb-4">
             🔥 {offerSlides.length > 1
               ? (locale === 'en' ? 'Special Offers' : 'عروض خاصة')
               : (locale === 'en' ? "Today's Offer" : 'عرض اليوم')}
           </span>
-          <h1 className="text-xl md:text-3xl font-extrabold mb-1 drop-shadow-lg leading-tight">
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-3 drop-shadow-lg leading-tight">
             {t(slide, locale, section.title_ar || 'UNO & SAMIR GROUP')}
           </h1>
-          <p className="text-[11.5px] md:text-sm text-white/90 mb-3 leading-relaxed drop-shadow line-clamp-2">
+          <p className="text-sm md:text-lg text-white/90 mb-6 leading-relaxed drop-shadow max-w-xl">
             {t({ subtitle_ar: slide.subtitle_ar, subtitle_en: slide.subtitle_en }, locale, section.subtitle_ar || '')}
           </p>
           {slide.link && (
             <Link
               href={slide.link}
-              className="inline-block px-5 py-2 bg-white text-green-700 rounded-full font-bold text-xs md:text-sm hover:bg-gray-100 transition shadow-lg"
+              className="inline-block px-7 py-3 bg-white text-green-700 rounded-full font-bold text-sm md:text-base hover:bg-gray-100 transition shadow-lg"
             >
               {t({ cta_ar: slide.cta_ar, cta_en: slide.cta_en }, locale, locale === 'en' ? 'Order Now' : 'اطلب دلوقتي')}
             </Link>
@@ -184,7 +183,7 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
 
         {/* Slide indicators */}
         {slides.length > 1 && (
-          <div className="absolute bottom-3 right-5 flex gap-1.5">
+          <div className="absolute bottom-6 right-6 md:right-16 flex gap-1.5">
             {slides.map((_, idx) => (
               <button
                 key={idx}

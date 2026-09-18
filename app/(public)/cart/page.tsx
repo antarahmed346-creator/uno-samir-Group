@@ -107,7 +107,7 @@ export default function CartPage() {
 
   if (displayItems.length === 0) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center px-4" dir={isRTL ? 'rtl' : 'ltr'} suppressHydrationWarning>
+      <div className="min-h-[80vh] bg-[#090909] flex flex-col items-center justify-center px-4" dir={isRTL ? 'rtl' : 'ltr'} suppressHydrationWarning>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -13,9 +13,10 @@ import { Heart } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase/client'
 import { useFavoriteIds, toggleFavorite } from '@/components/public/FavoriteButton'
 import type { Product } from '@/lib/types'
-import { localize } from '@/lib/i18n'
+import { localize, t } from '@/lib/i18n'
 
 function EmptyState({ locale }: { locale: string }) {
+  const isRTL = locale !== 'en'
   return (
     <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
       <svg viewBox="0 0 100 100" fill="none" stroke="#cbd5e1" strokeWidth={2.5} className="w-28 h-28 mb-5 opacity-60">
@@ -24,9 +25,11 @@ function EmptyState({ locale }: { locale: string }) {
         <path d="M15 55 L15 82 L75 82 L75 55" strokeLinecap="round" />
         <path d="M15 55 L38 55 L44 63 L60 63 L66 55 L75 55" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <p className="text-gray-400 font-semibold text-sm">لسه مفيش حاجة في المفضلة</p>
+      <p className="text-gray-400 font-semibold text-sm">
+        {isRTL ? 'لسه مفيش حاجة في المفضلة' : 'Nothing in favorites yet'}
+      </p>
       <Link href={localize("/", locale)} className="mt-4 text-red-600 font-bold text-sm">
-        شوف المنيو ←
+        {isRTL ? 'شوف المنيو ←' : '← Browse Menu'}
       </Link>
     </div>
   )
@@ -42,6 +45,8 @@ export default function FavoritesPage() {
     const match = document.cookie.match(/locale=([^;]+)/)
     setLocale(match ? match[1] : 'ar')
   }, [])
+
+  const isRTL = locale !== 'en'
 
   useEffect(() => {
     let cancelled = false
@@ -72,8 +77,8 @@ export default function FavoritesPage() {
   }, [favoriteIds])
 
   return (
-    <div dir="rtl" className="max-w-3xl mx-auto px-4 py-6 min-h-[60vh]">
-      <h1 className="text-xl font-extrabold mb-5">المفضلة</h1>
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="max-w-3xl mx-auto px-4 py-6 min-h-[60vh]">
+      <h1 className="text-xl font-extrabold mb-5">{isRTL ? 'المفضلة' : 'Favorites'}</h1>
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -89,7 +94,7 @@ export default function FavoritesPage() {
             <div key={product.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden relative">
               <button
                 onClick={() => toggleFavorite(product.id)}
-                aria-label="إزالة من المفضلة"
+                aria-label={isRTL ? 'إزالة من المفضلة' : 'Remove from favorites'}
                 className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white shadow flex items-center justify-center z-10"
               >
                 <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
@@ -97,15 +102,15 @@ export default function FavoritesPage() {
               <Link href={localize(`/product/${product.id}`, locale)}>
                 <div className="relative h-28 bg-gray-50">
                   {product.main_image_url ? (
-                    <Image src={product.main_image_url} alt={product.name_ar} fill className="object-cover" />
+                    <Image src={product.main_image_url} alt={t(product, locale, product.name_ar)} fill className="object-cover" />
                   ) : (
                     <div className="h-full flex items-center justify-center text-3xl">🍽️</div>
                   )}
                 </div>
                 <div className="p-2.5">
-                  <h3 className="font-bold text-[12px] mb-1 line-clamp-2">{product.name_ar}</h3>
+                  <h3 className="font-bold text-[12px] mb-1 line-clamp-2">{t(product, locale, product.name_ar)}</h3>
                   <span className="text-red-600 font-extrabold text-[13px]">
-                    {product.base_price?.toLocaleString('ar-EG')} ج.م
+                    {product.base_price?.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} {isRTL ? 'ج.م' : 'EGP'}
                   </span>
                 </div>
               </Link>
