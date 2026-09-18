@@ -132,7 +132,10 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
 
   return (
     <section className="relative h-[400px] md:h-[520px] overflow-hidden">
-      {/* Background */}
+      {/* Background: لو فيه عرض نشط، صورته بتتعرض هنا. لو مفيش،
+          مفيش صورة تانية منفصلة — الخلفية المشتركة لكل الصفحة
+          (في الـ layout) هي اللي بتظهر من وراها طبيعي، عشان
+          تفضل صورة واحدة مستمرة، مش صورتين */}
       {slide.image_url ? (
         <Image
           src={slide.image_url}
@@ -142,15 +145,26 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
           priority
         />
       ) : (
-        <Image
-          src="/images/hero-blend.jpg"
-          alt=""
-          fill
-          className="object-cover"
-          priority
+        <div
+          className="absolute inset-0 bg-cover bg-top"
+          style={{
+            backgroundImage: 'url(/images/hero-blend.jpg)',
+            maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
+          }}
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10" />
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10"
+        style={
+          !slide.image_url
+            ? {
+                maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
+              }
+            : undefined
+        }
+      />
 
       {/* Content */}
       <div className="relative h-full flex flex-col justify-center px-6 md:px-16 text-white max-w-3xl">

@@ -45,15 +45,18 @@ export default async function PublicLayout({
 
   // ✅ NO <html> or <body> here! Only <div>
   return (
-    <div className={`${isRTL ? cairo.variable : inter.variable} bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-900 dark:text-gray-100 transition-colors`}>
-      {/* WHAT: خلفية خفيفة جداً بصور الأكل بدل اللون الرمادي الفاتح
-          الثابت، ظاهرة في كل صفحات الموقع
-          WHY:  طلب العميل إن الخلفية دي تبقى موجودة في كل مكان،
-                مش بس في قسم الهيرو بالرئيسية
-          KILL: لو الشفافية اتزودت أكتر من كده، النص هيبقى صعب
-                القراية فوق الكروت اللي خلفيتها شبه شفافة */}
+    <div className={`relative ${isRTL ? cairo.variable : inter.variable} bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-900 dark:text-gray-100 transition-colors`}>
+      {/* WHAT: خلفية واحدة مستمرة بصور الأكل — قوية عند أعلى الصفحة
+          (منطقة الهيرو) وبتخف تدريجياً لحد ما تختفي خالص قبل باقي
+          المحتوى، مش صورتين منفصلتين (وحدة جوه الهيرو ووحدة خفيفة
+          للصفحة)
+          WHY:  كانت الصورة قبل كده مكررة — نسخة قوية جوه صندوق
+              الهيرو، ونسخة خفيفة جداً تحت — فكان شكلها متقطع/غريب،
+              مش امتداد طبيعي واحد للصورة
+          KILL: لو رجّعنا صورة تانية منفصلة جوه الهيرو زي الأول، هنرجع
+              لنفس مشكلة "الصورة حبيسة جوه البانر" تاني */}
       <div
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed opacity-[0.07] dark:opacity-[0.05]"
+        className="absolute inset-0 bg-cover bg-top opacity-[0.12] dark:opacity-[0.08]"
         style={{ backgroundImage: 'url(/images/hero-blend.jpg)' }}
         aria-hidden="true"
       />
