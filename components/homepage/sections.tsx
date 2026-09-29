@@ -146,7 +146,7 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
         />
       ) : (
         <div
-          className="absolute inset-0 bg-cover bg-top"
+          className="absolute inset-0 bg-cover bg-top pointer-events-none"
           style={{
             backgroundImage: 'url(/images/hero-blend.jpg)',
             maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
@@ -155,7 +155,7 @@ export function HeroSection({ section, offers, locale = 'ar' }: HeroSectionProps
         />
       )}
       <div
-        className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10"
+        className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10 pointer-events-none"
         style={
           !slide.image_url
             ? {

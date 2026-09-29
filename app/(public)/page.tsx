@@ -16,6 +16,7 @@ import {
 } from '@/lib/seo'
 import RealtimeProvider from '@/components/public/RealtimeProvider'
 import CategoryChips from '@/components/public/CategoryChips'
+import ChatWidgetLoader from '@/components/public/ChatWidgetLoader'
 import { Suspense } from 'react'
 
 export const metadata = generateSeoMetadata({
@@ -180,6 +181,8 @@ export default async function Homepage() {
           </div>
         </Suspense>
       </RealtimeProvider>
+
+      <ChatWidgetLoader />
     </>
   )
 }

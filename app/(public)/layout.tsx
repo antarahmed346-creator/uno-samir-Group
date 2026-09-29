@@ -9,8 +9,11 @@ import LanguageSwitcher from '@/components/public/LanguageSwitcher'
 import RealtimeConnectionBanner from '@/components/public/RealtimeConnectionBanner'
 import AppHeader from '@/components/public/AppHeader'
 import BottomNav from '@/components/public/BottomNav'
-import SupportFab from '@/components/public/SupportFab'
-import ChatWidgetLoader from '@/components/public/ChatWidgetLoader'
+// WHAT: SupportFab وChatWidgetLoader اتنقلوا من هنا لصفحات محددة
+//       (القائمة والرئيسية بالترتيب) بدل ما يشتغلوا في كل صفحة
+// WHY:  طلب العميل تحديداً لتقليل الشغل اللي بيحصل تلقائي في كل
+//       صفحة عامة في الموقع، خصوصاً إن الشات بيعمل فحص دخول +
+//       استعلامين قاعدة بيانات
 import ThemeToggle from '@/components/public/ThemeToggle'
 import NotificationBell from '@/components/public/NotificationBell'
 import { Toaster } from 'sonner'
@@ -56,11 +59,11 @@ export default async function PublicLayout({
           KILL: لو رجّعنا صورة تانية منفصلة جوه الهيرو زي الأول، هنرجع
               لنفس مشكلة "الصورة حبيسة جوه البانر" تاني */}
       <div
-        className="absolute inset-0 bg-cover bg-top opacity-[0.12] dark:opacity-[0.08]"
+        className="absolute inset-0 bg-cover bg-top opacity-[0.12] dark:opacity-[0.08] pointer-events-none"
         style={{ backgroundImage: 'url(/images/hero-blend.jpg)' }}
         aria-hidden="true"
       />
-      <div className={isRTL ? 'font-cairo' : 'font-sans'}>
+      <div className={`relative ${isRTL ? 'font-cairo' : 'font-sans'}`}>
         <RealtimeConnectionBanner />
 
         {/* WHAT: هيدر الموبايل المضغوط (التوصيل إلى + بحث) */}
@@ -126,8 +129,7 @@ export default async function PublicLayout({
 
         {/* WHAT: القائمة السفلية + زرار الدعم — موبايل بس */}
         <BottomNav locale={locale} />
-        <SupportFab />
-        <ChatWidgetLoader />
+
 
         {/* Footer */}
         <footer className="bg-gray-900 text-white mt-16">

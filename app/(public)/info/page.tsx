@@ -13,6 +13,7 @@ import PushNotificationToggle from '@/components/public/PushNotificationToggle'
 import GoogleSignInButton from '@/components/public/GoogleSignInButton'
 import SignOutButton from '@/components/public/SignOutButton'
 import { createServerClient } from '@/lib/supabase/server'
+import SupportFab from '@/components/public/SupportFab'
 
 const SUPPORT_WHATSAPP_NUMBER = '201000000000' // ⚠️ استبدله برقم المطعم الحقيقي
 const SUPPORT_PHONE_NUMBER = '+20 100 000 0000' // ⚠️ استبدله برقم المطعم الحقيقي
@@ -140,6 +141,8 @@ export default async function InfoPage() {
           </Link>
         </div>
       </div>
+
+      <SupportFab />
     </div>
   )
 }

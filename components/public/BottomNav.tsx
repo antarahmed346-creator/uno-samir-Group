@@ -18,15 +18,26 @@ export default function BottomNav({ locale = 'ar' }: { locale?: string }) {
   const totalItems = useCartStore((s) => s.getTotalItems())
   const isRTL = locale === 'ar'
 
+  const menuHref = localize('/info', locale)
+  const ordersHref = localize('/track-order', locale)
+  const favoritesHref = localize('/favorites', locale)
+
   const items = [
-    { href: localize('/info', locale), label: isRTL ? 'القائمة' : 'Menu', icon: Menu },
-    { href: localize('/track-order', locale), label: isRTL ? 'الطلبات' : 'Orders', icon: ClipboardList },
+    { href: menuHref, label: isRTL ? 'القائمة' : 'Menu', icon: Menu },
+    { href: ordersHref, label: isRTL ? 'الطلبات' : 'Orders', icon: ClipboardList },
     null, // مكان زرار السلة البارز في النص
-    { href: localize('/favorites', locale), label: isRTL ? 'المفضلة' : 'Favorites', icon: Heart },
-    { href: localize('/', locale), label: isRTL ? 'الرئيسية' : 'Home', icon: Home },
+    { href: favoritesHref, label: isRTL ? 'المفضلة' : 'Favorites', icon: Heart },
+    { href: localize('/', locale), label: isRTL ? 'الرئيسية' : 'Home', icon: Home, isHome: true },
   ]
 
-  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href))
+  // WHAT: أي صفحة مش تابعة صراحة للقائمة/الطلبات/المفضلة، الرئيسية
+  //       بتتعلّم عليها كافتراضي
+  // WHY:  من غيره، صفحة زي تفاصيل المنتج أو الدفع كانت بتخلي
+  //       الدايرة تختفي تماماً من الشريط، مش بس تنتقل لتبويب
+  //       تاني — ده بيحس العميل إنه "خرج" من التنقل الأساسي
+  const matchesOther = [menuHref, ordersHref, favoritesHref].some((href) => pathname.startsWith(href))
+  const isActive = (item: { href: string; isHome?: boolean }) =>
+    item.isHome ? !matchesOther : pathname.startsWith(item.href)
 
   return (
     <nav
@@ -53,7 +64,7 @@ export default function BottomNav({ locale = 'ar' }: { locale?: string }) {
           )
         }
         const Icon = item.icon
-        const active = isActive(item.href)
+        const active = isActive(item)
         return (
           <Link
             key={i}
@@ -65,12 +76,12 @@ export default function BottomNav({ locale = 'ar' }: { locale?: string }) {
                 <motion.span
                   layoutId="bottomNavActiveCircle"
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className="absolute -top-[18px] w-[42px] h-[42px] rounded-full bg-red-600 shadow-lg shadow-red-600/40 border-4 border-white dark:border-gray-900"
+                  className="absolute -top-[36px] w-[42px] h-[42px] rounded-full bg-red-600 shadow-lg shadow-red-600/40 border-4 border-white dark:border-gray-900"
                 />
               )}
               <Icon
                 className={`relative w-[18px] h-[18px] transition-colors ${
-                  active ? 'text-white -translate-y-[18px]' : 'text-gray-400 dark:text-gray-500'
+                  active ? 'text-white -translate-y-[30px]' : 'text-gray-400 dark:text-gray-500'
                 }`}
                 strokeWidth={active ? 2.4 : 2}
               />
