@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs/config'
 
 const nextConfig: NextConfig = {
   images: {
@@ -73,4 +74,15 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+// WHAT: لف إعدادات Next.js بإعدادات Sentry — ده بيفعّل رفع
+//       source maps (عشان رسايل الخطأ تبقى مفهومة، مش كود
+//       مضغوط) وقت الـ build لو متغيرات SENTRY_ORG/PROJECT/
+//       AUTH_TOKEN موجودة. من غيرهم، الموقع هيفضل شغال عادي
+//       بس رسايل الخطأ هتبقى أصعب تتقرى
+// WHY:  طلب العميل تتبع الأخطاء كأول خطوة لتحسين استقرار الموقع
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: true,
+  widenClientFileUpload: true,
+})
